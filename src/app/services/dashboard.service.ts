@@ -7,7 +7,7 @@ import { Customer } from './customer.service';
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'http://localhost:8080/api/dashboard';
+  private apiUrl = 'https://wavzedemo.azurewebsites.net/api/dashboard';
 
   constructor(private http: HttpClient) { }
 

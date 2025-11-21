@@ -33,7 +33,7 @@ export interface Customer {
   providedIn: 'root'
 })
 export class CustomerService {
-  private apiUrl = 'http://localhost:8080/api/customers';
+  private apiUrl = 'https://wavzedemo.azurewebsites.net/api/customers';
 
   constructor(private http: HttpClient) { }
 
