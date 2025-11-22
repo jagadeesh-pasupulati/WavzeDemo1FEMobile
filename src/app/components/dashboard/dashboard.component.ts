@@ -204,7 +204,7 @@ import { CustomerService, Customer } from '../../services/customer.service';
             </table>
           </div>
           
-          <!-- AI Assistant_Button -->
+          <!-- AI Assistant Button -->
           <div class="relative p-4 min-h-[60px]">
             <button (click)="showAiAssistant = true" 
                     class="absolute bottom-4 right-4 w-10 h-10 bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition-colors flex items-center justify-center">
