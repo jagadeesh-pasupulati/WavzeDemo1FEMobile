@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Customer } from './customer.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'https://wavzedemo.azurewebsites.net/api/dashboard';
+  private apiUrl = `${environment.apiUrl}/api/dashboard`;
 
   constructor(private http: HttpClient) { }
 

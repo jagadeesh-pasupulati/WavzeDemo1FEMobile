@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Customer {
   customerId?: string;
@@ -33,7 +34,7 @@ export interface Customer {
   providedIn: 'root'
 })
 export class CustomerService {
-  private apiUrl = 'https://wavzedemo.azurewebsites.net/api/customers';
+  private apiUrl = `${environment.apiUrl}/api/customers`;
 
   constructor(private http: HttpClient) { }
 
