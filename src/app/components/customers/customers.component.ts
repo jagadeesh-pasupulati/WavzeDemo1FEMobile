@@ -66,55 +66,49 @@ import { CustomerService, Customer } from '../../services/customer.service';
 
         <!-- Customers Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
-                  Customer <i class="pi pi-sort text-xs ml-1 text-gray-400"></i>
-                </th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
-                  Stage <i class="pi pi-sort text-xs ml-1 text-gray-400"></i>
-                </th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700">
-                  <i class="pi pi-home text-gray-600"></i>
-                </th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700">Phone</th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700">Contact window</th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700">Last attempt</th>
-                <th class="text-left py-3 px-4 font-semibold text-gray-700">Last action</th>
-                <th class="text-left py-3 px-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let customer of filteredCustomers; let i = index" 
-                  class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-                  (click)="viewCustomer(customer)">
-                <td class="py-3 px-4">
-                  <div>
-                    <p class="font-medium text-gray-900">{{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}</p>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ customer.email || 'ccalvin@email.org' }}</p>
-                  </div>
-                </td>
-                <td class="py-3 px-4">
-                  <span [ngClass]="getStageBadgeClass(customer)" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">
-                    <i *ngIf="getStage(customer) === 'PreQ'" class="pi pi-check text-xs mr-1"></i>
-                    {{ getStage(customer) }}
-                  </span>
-                </td>
-                <td class="py-3 px-4 text-gray-600">1</td>
-                <td class="py-3 px-4 text-gray-700">{{ customer.phone || formatPhone(customer.phn1Nbr) || '(307) 555-0133' }}</td>
-                <td class="py-3 px-4 text-gray-700">10:00-15:00</td>
-                <td class="py-3 px-4 text-gray-600 text-xs">{{ formatDate(customer.createTs) || '3/4/16' }}</td>
-                <td class="py-3 px-4 text-gray-600 text-xs">{{ getLastAction(customer) }}</td>
-                <td class="py-3 px-4">
-                  <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" 
-                          (click)="showMenu($event, customer, menu); $event.stopPropagation()">
-                    <i class="pi pi-ellipsis-v"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <div class="relative max-h-[600px] overflow-y-auto customers-table-scrollbar">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 bg-gray-50">
+                      Customer <i class="pi pi-sort text-xs ml-1 text-gray-400"></i>
+                    </th>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 bg-gray-50">
+                      <i class="pi pi-home text-gray-600"></i>
+                    </th>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 bg-gray-50">Phone</th>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 bg-gray-50">Contact window</th>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 bg-gray-50">Last attempt</th>
+                    <th class="text-left py-3 px-4 font-semibold text-gray-700 bg-gray-50">Last action</th>
+                    <th class="text-left py-3 px-4 bg-gray-50"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let customer of filteredCustomers; let i = index" 
+                      class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
+                    <td class="py-3 px-4" (click)="viewCustomer(customer)">
+                      <div>
+                        <p class="font-medium text-gray-900">{{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ customer.email || 'ccalvin@email.org' }}</p>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4 text-gray-600" (click)="viewCustomer(customer)">{{ getHomeCount(customer) }}</td>
+                    <td class="py-3 px-4 text-gray-700" (click)="viewCustomer(customer)">{{ customer.phone || formatPhone(customer.phn1Nbr) || '(307) 555-0133' }}</td>
+                    <td class="py-3 px-4 text-gray-700" (click)="viewCustomer(customer)">10:00-15:00</td>
+                    <td class="py-3 px-4 text-gray-600 text-xs" (click)="viewCustomer(customer)">{{ formatDate(customer.createTs) || '3/4/16' }}</td>
+                    <td class="py-3 px-4 text-gray-600 text-xs" (click)="viewCustomer(customer)">{{ getLastAction(customer) }}</td>
+                    <td class="py-3 px-4">
+                      <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" 
+                              (click)="showMenu($event, customer, menu); $event.stopPropagation()">
+                        <i class="pi pi-ellipsis-v"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -238,6 +232,31 @@ import { CustomerService, Customer } from '../../services/customer.service';
     :host ::ng-deep .p-dialog .p-dialog-header .p-dialog-header-icon:hover {
       color: #111827;
       background-color: #f3f4f6;
+    }
+
+    /* Custom scrollbar styling for customers table */
+    .customers-table-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .customers-table-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+
+    .customers-table-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .customers-table-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Firefox scrollbar */
+    .customers-table-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f1f5f9;
     }
   `]
 })
@@ -399,6 +418,13 @@ export class CustomersComponent implements OnInit {
     const actions = ['Call', 'Zoom Call', 'Email sent', 'Email received', 'Voicemail', '', ''];
     const index = this.customers.indexOf(customer);
     return actions[index % actions.length] || '';
+  }
+
+  getHomeCount(customer: Customer): number {
+    // Mock home count - in real app, this would come from customer data or interaction count
+    // Returns a number between 1-3 based on customer index
+    const index = this.customers.indexOf(customer);
+    return (index % 3) + 1;
   }
 
   saveCustomer(addMore: boolean) {

@@ -5,13 +5,17 @@ import { RouterModule } from '@angular/router';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { TagModule } from 'primeng/tag';
+import { MenuModule } from 'primeng/menu';
 import { DashboardService } from '../../services/dashboard.service';
 import { CustomerService, Customer } from '../../services/customer.service';
+import { CommunicationService } from '../../services/communication.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DialogModule, ButtonModule, InputTextModule],
+  imports: [CommonModule, FormsModule, RouterModule, DialogModule, ButtonModule, InputTextModule, MessageModule, TagModule, MenuModule],
   template: `
     <div class="p-6">
         <!-- Header -->
@@ -65,7 +69,12 @@ import { CustomerService, Customer } from '../../services/customer.service';
             <div class="flex items-center justify-between mb-2">
               <i class="pi pi-trophy text-yellow-500 text-2xl"></i>
             </div>
-            <p class="text-sm text-gray-600 mb-1">Win rate</p>
+            <div class="text-sm text-gray-600 mb-1 flex items-center gap-2">
+              <div class="w-6 h-6 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center shadow-md" style="box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5), 0 0 12px rgba(251, 191, 36, 0.3);">
+                <i class="pi pi-trophy text-yellow-700 text-sm" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));"></i>
+              </div>
+              Win rate
+            </div>
             <p class="text-2xl font-bold">{{ stats.winRate }}</p>
             <p class="text-xs text-yellow-600 mt-2 flex items-center gap-1" *ngIf="stats.winRateChange < 0">
               <i class="pi pi-arrow-down text-xs"></i>
@@ -92,7 +101,7 @@ import { CustomerService, Customer } from '../../services/customer.service';
                           style="font-size: 13px; font-weight: 500;"
                           (click)="viewMode = 'todo'; applyFilters()">
                     <i class="pi pi-list text-xs" [class.text-blue-900]="viewMode === 'todo'" [class.text-gray-500]="viewMode !== 'todo'"></i>
-                    To do
+                    To do ({{ getTodoCount() }})
                   </button>
                   <button class="px-3 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5"
                           [class.bg-blue-50]="viewMode === 'done'"
@@ -104,11 +113,21 @@ import { CustomerService, Customer } from '../../services/customer.service';
                           style="font-size: 13px; font-weight: 500;"
                           (click)="viewMode = 'done'; applyFilters()">
                     <i class="pi pi-check text-xs" [class.text-blue-900]="viewMode === 'done'" [class.text-gray-500]="viewMode !== 'done'"></i>
-                    Done
+                    Done ({{ getDoneCount() }})
                   </button>
                 </div>
               </div>
               <div class="flex items-center gap-4">
+                <!-- Search Bar -->
+                <div class="relative flex items-center bg-white border border-gray-200 rounded-md px-3 py-1.5" style="min-width: 200px; max-width: 300px;">
+                  <input type="text" 
+                         [(ngModel)]="searchQuery"
+                         (input)="applyFilters()"
+                         placeholder="Search..."
+                         class="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 outline-none focus:ring-0 focus:outline-none">
+                  <div class="w-px h-4 bg-gray-300 mx-2"></div>
+                  <i class="pi pi-search text-gray-400 text-sm cursor-pointer"></i>
+                </div>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <div class="relative inline-block w-11 h-6">
                     <input type="checkbox" 
@@ -137,44 +156,89 @@ import { CustomerService, Customer } from '../../services/customer.service';
             </div>
           </div>
 
+          <!-- Call Status Message -->
+          <div *ngIf="callMessage" class="px-4 pt-2">
+            <p-message [severity]="callMessage.severity" [text]="callMessage.message"></p-message>
+          </div>
+
           <!-- Table -->
           <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
-                      (click)="sortByCustomerName()">
-                    <div class="flex items-center gap-1">
-                      <span>Customer</span>
-                      <i class="pi text-xs" 
-                         [class.pi-sort]="customerSortOrder === null"
-                         [class.pi-sort-up]="customerSortOrder === 'asc'"
-                         [class.pi-sort-down]="customerSortOrder === 'desc'"
-                         [class.text-blue-600]="customerSortOrder !== null"
-                         [class.text-gray-400]="customerSortOrder === null"></i>
-                    </div>
-                  </th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Phone</th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">New prod.</th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">In progress</th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Best time</th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Time sensitive</th>
-                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Contact by</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div class="relative max-h-[360px] overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9;">
+              <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50"
+                        (click)="sortByCustomerName()">
+                      <div class="flex items-center gap-1">
+                        <span>Customer</span>
+                        <i class="pi text-xs" 
+                           [class.pi-sort]="customerSortOrder === null"
+                           [class.pi-sort-up]="customerSortOrder === 'asc'"
+                           [class.pi-sort-down]="customerSortOrder === 'desc'"
+                           [class.text-blue-600]="customerSortOrder !== null"
+                           [class.text-gray-400]="customerSortOrder === null"></i>
+                      </div>
+                    </th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">Phone</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">New prod.</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">In progress</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">Best time</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">Time sensitive</th>
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 bg-gray-50">Contact by</th>
+                  </tr>
+                </thead>
+                <tbody>
                 <tr *ngFor="let customer of filteredTodayCustomers" 
                     (click)="viewCustomer(customer)"
                     [class.bg-blue-50]="selectedCustomer?.customerId === customer.customerId"
                     class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
                   <td class="py-3 px-4">
-                    <div>
-                      <p class="text-sm font-medium text-gray-900">{{ customer.fullName || (customer.firstName + ' ' + (customer.lastName || '')) }}</p>
-                      <p class="text-xs text-gray-500 mt-0.5">{{ customer.email || '' }}</p>
+                    <div class="flex items-center gap-2">
+                      <div *ngIf="customer.phone || customer.phn1Nbr" class="relative inline-flex items-center justify-center w-5 h-5">
+                        <!-- Phone icon with checkmark when Contact by is Phone -->
+                        <ng-container *ngIf="getContactMethod(customer) === 'Phone'">
+                          <i class="pi pi-phone text-xs text-green-400" 
+                             style="filter: drop-shadow(0 0 3px rgba(74, 222, 128, 0.4)); color: #4ade80;"></i>
+                          <i class="pi pi-check text-[9px] absolute -top-0.5 right-0" 
+                             style="color: #4ade80; font-weight: 900; text-shadow: 0 0 2px rgba(74, 222, 128, 0.5);"></i>
+                        </ng-container>
+                        <!-- Phone icon with strike-through when Contact by is Email -->
+                        <ng-container *ngIf="getContactMethod(customer) === 'Email'">
+                          <div class="relative inline-flex items-center justify-center">
+                            <i class="pi pi-phone text-xs" style="color: #ec4899;"></i>
+                            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 12 12">
+                              <line x1="0.5" y1="0.5" x2="11.5" y2="11.5" 
+                                    stroke="#ec4899" 
+                                    stroke-width="2" 
+                                    stroke-linecap="round"/>
+                            </svg>
+                          </div>
+                        </ng-container>
+                        <!-- Regular gray phone icon for other cases -->
+                        <i *ngIf="getContactMethod(customer) !== 'Phone' && getContactMethod(customer) !== 'Email'" 
+                           class="pi pi-phone text-xs text-gray-500"></i>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-gray-900 hover:text-blue-600 cursor-pointer" 
+                           (click)="openCustomerDetails(customer, $event)">{{ customer.fullName || (customer.firstName + ' ' + (customer.lastName || '')) }}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ customer.email || '' }}</p>
+                      </div>
                     </div>
                   </td>
-                  <td class="py-3 px-4 text-sm text-gray-900">
-                    {{ customer.phone || formatPhone(customer.phn1Nbr) || 'N/A' }}
+                  <td class="py-3 px-4 text-sm">
+                    <button *ngIf="customer.phone || customer.phn1Nbr" 
+                            (click)="makePhoneCall(customer, $event)"
+                            [disabled]="callingPhone === (customer.phone || formatPhone(customer.phn1Nbr))"
+                            class="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            [class.animate-pulse]="callingPhone === (customer.phone || formatPhone(customer.phn1Nbr))">
+                      <i class="pi" 
+                         [class.pi-phone]="callingPhone !== (customer.phone || formatPhone(customer.phn1Nbr))"
+                         [class.pi-spin]="callingPhone === (customer.phone || formatPhone(customer.phn1Nbr))"
+                         [class.pi-spinner]="callingPhone === (customer.phone || formatPhone(customer.phn1Nbr))"
+                         [class.text-xs]="true"></i>
+                      {{ customer.phone || formatPhone(customer.phn1Nbr) }}
+                    </button>
+                    <span *ngIf="!customer.phone && !customer.phn1Nbr" class="text-gray-400">N/A</span>
                   </td>
                   <td class="py-3 px-4 text-sm text-gray-900">
                     {{ getNewProducts(customer) }}
@@ -191,8 +255,8 @@ import { CustomerService, Customer } from '../../services/customer.service';
                     </span>
                     <span *ngIf="!getTimeSensitiveTag(customer)" class="text-sm text-gray-400">-</span>
                   </td>
-                  <td class="py-3 px-4 text-sm text-gray-900">
-                    {{ getContactMethod(customer) }}
+                  <td class="py-3 px-4 text-sm">
+                    <span class="text-gray-900">{{ getContactMethod(customer) }}</span>
                   </td>
                 </tr>
                 <tr *ngIf="filteredTodayCustomers.length === 0">
@@ -202,18 +266,449 @@ import { CustomerService, Customer } from '../../services/customer.service';
                 </tr>
               </tbody>
             </table>
-          </div>
-          
-          <!-- AI Assistant Button -->
-          <div class="relative p-4 min-h-[60px]">
-            <button (click)="showAiAssistant = true" 
-                    class="absolute bottom-4 right-4 w-10 h-10 bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition-colors flex items-center justify-center">
-              <i class="pi pi-star text-sm"></i>
-            </button>
+            </div>
           </div>
         </div>
 
       </div>
+
+      <!-- Customer Details Modal -->
+      <p-dialog [(visible)]="showCustomerDetails" 
+                [modal]="true" 
+                [style]="{width: '90vw', maxWidth: '1200px', height: '90vh'}"
+                [styleClass]="'customer-details-dialog'"
+                [draggable]="false"
+                [resizable]="false"
+                [closable]="false">
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between w-full px-6 py-4 border-b border-gray-200 bg-white">
+            <div class="flex items-center gap-4">
+              <button (click)="navigateCustomer('prev')" 
+                      [disabled]="!canNavigatePrev()"
+                      class="p-2 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="pi pi-chevron-left text-gray-700 text-base"></i>
+              </button>
+              <button (click)="navigateCustomer('next')" 
+                      [disabled]="!canNavigateNext()"
+                      class="p-2 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="pi pi-chevron-right text-gray-700 text-base"></i>
+              </button>
+              <h2 class="text-2xl font-semibold text-gray-900" style="font-size: 24px; font-weight: 600; line-height: 32px;">
+                {{ selectedCustomerForDetails?.fullName || (selectedCustomerForDetails?.firstName + ' ' + (selectedCustomerForDetails?.lastName || '')) }}
+              </h2>
+            </div>
+            <button (click)="closeCustomerDetails()" 
+                    class="p-2 hover:bg-gray-100 rounded transition-colors">
+              <i class="pi pi-times text-gray-700 text-lg"></i>
+            </button>
+          </div>
+        </ng-template>
+        
+        <div class="flex flex-col h-full overflow-hidden" *ngIf="selectedCustomerForDetails">
+          <!-- Call Status Message in Modal -->
+          <div *ngIf="callMessageModal" class="px-6 pt-3">
+            <p-message [severity]="callMessageModal.severity" [text]="callMessageModal.message"></p-message>
+          </div>
+          
+          <!-- Status Bar -->
+          <div class="px-6 py-3 bg-white border-b border-gray-200 flex items-center gap-4 flex-wrap">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700" style="font-size: 12px; font-weight: 500;">
+              OK to call
+            </span>
+            <i class="pi pi-phone text-gray-700" style="font-size: 14px;"></i>
+            <span class="text-sm text-gray-700" style="font-size: 14px; line-height: 20px;">{{ getCurrentTime() }} {{ selectedCustomerForDetails.timeZone || 'EST' }}</span>
+            <button *ngIf="isOkToCall(selectedCustomerForDetails) && (selectedCustomerForDetails.phone || selectedCustomerForDetails.phn1Nbr)"
+                    (click)="makePhoneCallFromModal(selectedCustomerForDetails)"
+                    [disabled]="callingPhoneModal === (selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr))"
+                    class="text-sm text-gray-900 font-medium hover:text-blue-600 hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    style="font-size: 14px; line-height: 20px;"
+                    [class.animate-pulse]="callingPhoneModal === (selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr))">
+              <i class="pi"
+                 [class.pi-phone]="callingPhoneModal !== (selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr))"
+                 [class.pi-spin]="callingPhoneModal === (selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr))"
+                 [class.pi-spinner]="callingPhoneModal === (selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr))"
+                 [class.text-xs]="true"></i>
+              {{ selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr) }}
+            </button>
+            <span *ngIf="!isOkToCall(selectedCustomerForDetails) || (!selectedCustomerForDetails.phone && !selectedCustomerForDetails.phn1Nbr)" 
+                  class="text-sm text-gray-900 font-medium" 
+                  style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr) || 'N/A' }}</span>
+            <span class="text-sm text-gray-600" style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.email }}</span>
+          </div>
+
+          <!-- Content Area -->
+          <div class="flex-1 overflow-y-auto p-6">
+            <div class="grid grid-cols-3 gap-6">
+              <!-- Left Side: Interested Products and Own Products -->
+              <div class="col-span-2 space-y-6">
+                <!-- Interested Products Section -->
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900 mb-4" style="font-size: 16px; font-weight: 600; line-height: 24px;">Interested Products</h3>
+                  <div class="space-y-3">
+                    <!-- Mortgage Product -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4 flex-1">
+                          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="pi pi-home text-blue-600" style="font-size: 20px;"></i>
+                          </div>
+                          <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                              <h4 class="font-semibold text-gray-900" style="font-size: 14px; font-weight: 600; line-height: 20px;">Mortgage (30y Fixed Rate)</h4>
+                              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700" style="font-size: 12px; font-weight: 500;">New</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2" style="font-size: 14px; line-height: 20px; color: #6b7280;">Website • 8/15/2025</p>
+                            <p class="text-sm text-green-600 font-medium mb-1" style="font-size: 14px; line-height: 20px; font-weight: 500; color: #059669;">Call now</p>
+                            <p class="text-xs text-gray-600" style="font-size: 12px; line-height: 16px;">Co-applicant: Jane Smith (406) 555-0120</p>
+                          </div>
+                        </div>
+                        <button class="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                          <i class="pi pi-ellipsis-v text-gray-600" style="font-size: 16px;"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Checking Product -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4 flex-1">
+                          <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="pi pi-wallet text-gray-600" style="font-size: 20px;"></i>
+                          </div>
+                          <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                              <h4 class="font-semibold text-gray-900" style="font-size: 14px; font-weight: 600; line-height: 20px;">Checking (Basic Checking Plus)</h4>
+                              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700" style="font-size: 12px; font-weight: 500;">Follow Up</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-2" style="font-size: 14px; line-height: 20px; color: #6b7280;">Phone • 3/12/2025</p>
+                            <p class="text-sm text-gray-600" style="font-size: 14px; line-height: 20px;">Call in 5 days (3/12/2025)</p>
+                          </div>
+                        </div>
+                        <button class="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                          <i class="pi pi-ellipsis-v text-gray-600" style="font-size: 16px;"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Own Products Section -->
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900 mb-4" style="font-size: 16px; font-weight: 600; line-height: 24px;">Own Products</h3>
+                  <div class="space-y-3">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4 flex-1">
+                          <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="pi pi-wallet text-gray-600" style="font-size: 20px;"></i>
+                          </div>
+                          <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1" style="font-size: 14px; font-weight: 600; line-height: 20px;">Checking</h4>
+                            <p class="text-sm text-gray-500" style="font-size: 14px; line-height: 20px; color: #6b7280;">Phone • 3/12/2025</p>
+                          </div>
+                        </div>
+                        <button class="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                          <i class="pi pi-ellipsis-v text-gray-600" style="font-size: 16px;"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Side: Details Section -->
+              <div>
+                <h3 class="text-base font-semibold text-gray-900 mb-4" style="font-size: 16px; font-weight: 600; line-height: 24px;">Details</h3>
+                <div class="space-y-3">
+                  <!-- First Box: Name, Email, Phone, Address -->
+                  <div class="bg-white border border-gray-200 rounded-lg p-3">
+                    <div class="space-y-0">
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Name</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.fullName || (selectedCustomerForDetails.firstName + ' ' + (selectedCustomerForDetails.lastName || '')) }}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Email</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.email || 'N/A' }}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Phone</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr) || 'N/A' }}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Address</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">2972 Westheimer Rd. Santa Ana, Illinois 85486</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Second Box: Other Details -->
+                  <div class="bg-white border border-gray-200 rounded-lg p-3">
+                    <div class="space-y-0">
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Time Zone</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ selectedCustomerForDetails.timeZone || 'EST' }}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Call window</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">10:00am - 2:00pm</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Attempts</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">3/5</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-200">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Contact</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ getContactMethod(selectedCustomerForDetails) }}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 py-2">
+                        <p class="text-xs font-bold text-gray-700" style="font-size: 12px; line-height: 16px; font-weight: 700;">Created</p>
+                        <p class="text-sm text-gray-900" style="font-size: 14px; line-height: 20px;">{{ formatDate(selectedCustomerForDetails.createTs) || 'N/A' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Buttons -->
+          <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-end gap-3">
+            <button (click)="logContactResult()" 
+                    class="px-4 py-2 bg-gray-700 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors" 
+                    style="font-size: 14px; font-weight: 500; line-height: 20px;">
+              Log Contact Result
+            </button>
+            <button (click)="closeCustomerDetails()" 
+                    class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors"
+                    style="font-size: 14px; font-weight: 500; line-height: 20px;">
+              Close
+            </button>
+          </div>
+        </div>
+      </p-dialog>
+
+      <!-- Log Contact Results Modal -->
+      <p-dialog [(visible)]="showLogContactResult" 
+                [modal]="true" 
+                [style]="{width: '600px', maxWidth: '90vw'}"
+                [styleClass]="'log-contact-result-dialog'"
+                [draggable]="false"
+                [resizable]="false"
+                [closable]="false"
+                *ngIf="selectedCustomerForDetails">
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between w-full px-6 py-4 border-b border-gray-200 bg-white">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900 mb-1" style="font-size: 20px; font-weight: 600; line-height: 28px;">Log Contact Results</h2>
+              <div class="text-sm text-gray-600" style="font-size: 14px; line-height: 20px;">
+                <div>{{ selectedCustomerForDetails.fullName || (selectedCustomerForDetails.firstName + ' ' + (selectedCustomerForDetails.lastName || '')) }}</div>
+                <div>{{ selectedCustomerForDetails.email }}</div>
+                <div>{{ selectedCustomerForDetails.phone || formatPhone(selectedCustomerForDetails.phn1Nbr) }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">Esc</span>
+              <button (click)="closeLogContactResult()" 
+                      class="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                <i class="pi pi-times text-gray-700 text-lg"></i>
+              </button>
+            </div>
+          </div>
+        </ng-template>
+        
+        <div class="px-6 py-4 space-y-6">
+          <!-- How did the contact occur? -->
+          <div>
+            <label class="block text-sm font-medium text-gray-900 mb-3" style="font-size: 14px; font-weight: 500;">How did the contact occur?</label>
+            <div class="flex gap-3">
+              <button (click)="contactOccurred = 'outbound'"
+                      [class.bg-blue-700]="contactOccurred === 'outbound'"
+                      [class.text-white]="contactOccurred === 'outbound'"
+                      [class.bg-gray-200]="contactOccurred !== 'outbound'"
+                      [class.text-gray-700]="contactOccurred !== 'outbound'"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-arrow-right text-xs"></i>
+                Outbound
+              </button>
+              <button (click)="contactOccurred = 'inbound'"
+                      [class.bg-blue-700]="contactOccurred === 'inbound'"
+                      [class.text-white]="contactOccurred === 'inbound'"
+                      [class.bg-gray-200]="contactOccurred !== 'inbound'"
+                      [class.text-gray-700]="contactOccurred !== 'inbound'"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-arrow-left text-xs"></i>
+                Inbound
+              </button>
+            </div>
+          </div>
+
+          <!-- Contact methods -->
+          <div>
+            <label class="block text-sm font-medium text-gray-900 mb-3" style="font-size: 14px; font-weight: 500;">Contact Methods</label>
+            <div class="flex gap-3 flex-wrap">
+              <button (click)="toggleContactMethod('phone')"
+                      [class.bg-blue-700]="contactMethod.includes('phone')"
+                      [class.text-white]="contactMethod.includes('phone')"
+                      [class.bg-gray-200]="!contactMethod.includes('phone')"
+                      [class.text-gray-700]="!contactMethod.includes('phone')"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-phone text-xs"></i>
+                Phone
+              </button>
+              <button (click)="toggleContactMethod('text')"
+                      [class.bg-blue-700]="contactMethod.includes('text')"
+                      [class.text-white]="contactMethod.includes('text')"
+                      [class.bg-gray-200]="!contactMethod.includes('text')"
+                      [class.text-gray-700]="!contactMethod.includes('text')"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-comment text-xs"></i>
+                Text
+              </button>
+              <button (click)="toggleContactMethod('email')"
+                      [class.bg-blue-700]="contactMethod.includes('email')"
+                      [class.text-white]="contactMethod.includes('email')"
+                      [class.bg-gray-200]="!contactMethod.includes('email')"
+                      [class.text-gray-700]="!contactMethod.includes('email')"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-envelope text-xs"></i>
+                Email
+              </button>
+            </div>
+          </div>
+
+          <!-- Call Result (only show if contact method is phone) -->
+          <div *ngIf="contactMethod.includes('phone')">
+            <label class="block text-sm font-medium text-gray-900 mb-3" style="font-size: 14px; font-weight: 500;">Call Result</label>
+            <div class="flex gap-3 flex-wrap">
+              <button (click)="callResult = 'spoke'"
+                      [class.bg-blue-700]="callResult === 'spoke'"
+                      [class.text-white]="callResult === 'spoke'"
+                      [class.bg-gray-200]="callResult !== 'spoke'"
+                      [class.text-gray-700]="callResult !== 'spoke'"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-comments text-xs"></i>
+                Spoke with Customer
+              </button>
+              <button (click)="callResult = 'left-message'"
+                      [class.bg-blue-700]="callResult === 'left-message'"
+                      [class.text-white]="callResult === 'left-message'"
+                      [class.bg-gray-200]="callResult !== 'left-message'"
+                      [class.text-gray-700]="callResult !== 'left-message'"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-question-circle text-xs"></i>
+                Left Message
+              </button>
+              <button (click)="callResult = 'no-message'"
+                      [class.bg-blue-700]="callResult === 'no-message'"
+                      [class.text-white]="callResult === 'no-message'"
+                      [class.bg-gray-200]="callResult !== 'no-message'"
+                      [class.text-gray-700]="callResult !== 'no-message'"
+                      class="px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                      style="font-size: 14px; font-weight: 500;">
+                <i class="pi pi-times text-xs"></i>
+                No Message Left
+              </button>
+            </div>
+          </div>
+
+          <!-- Products -->
+          <div>
+            <label class="block text-sm font-medium text-gray-900 mb-3" style="font-size: 14px; font-weight: 500;">Products</label>
+            <div class="space-y-3">
+              <!-- Mortgage Product -->
+              <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="pi pi-home text-blue-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 mb-1" style="font-size: 14px; font-weight: 600;">Mortgage (30y Fixed Rate)</h4>
+                    <p class="text-xs text-gray-500 mb-0.5">Source: Website</p>
+                    <p class="text-xs text-gray-500 mb-0.5">Created: 8/15/2025</p>
+                    <p class="text-xs text-gray-600 mt-1">Co-applicant: Jane Smith (406) 555-0120</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select class="text-xs border border-gray-300 rounded px-2 py-1 text-gray-700" style="font-size: 12px;">
+                      <option>Select action...</option>
+                      <option>Follow up</option>
+                      <option>Mark as complete</option>
+                    </select>
+                    <button class="p-1.5 hover:bg-gray-100 rounded">
+                      <i class="pi pi-ellipsis-v text-gray-600 text-sm"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Checking Product -->
+              <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="pi pi-wallet text-blue-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="font-semibold text-gray-900 mb-1" style="font-size: 14px; font-weight: 600;">Checking (Basic Checking Plus)</h4>
+                    <p class="text-xs text-gray-500 mb-0.5">Source: Phone</p>
+                    <p class="text-xs text-gray-500">Created: 3/12/2025</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select class="text-xs border border-gray-300 rounded px-2 py-1 text-gray-700" style="font-size: 12px;">
+                      <option>Select action...</option>
+                      <option>Follow up</option>
+                      <option>Mark as complete</option>
+                    </select>
+                    <button class="p-1.5 hover:bg-gray-100 rounded">
+                      <i class="pi pi-ellipsis-v text-gray-600 text-sm"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments -->
+          <div>
+            <label class="block text-sm font-medium text-gray-900 mb-2" style="font-size: 14px; font-weight: 500;">Comments</label>
+            <textarea [(ngModel)]="logContactComments"
+                      placeholder="Write your comments here..."
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows="4"
+                      style="font-size: 14px; min-height: 100px;"></textarea>
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <ng-template pTemplate="footer">
+          <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
+            <button (click)="closeLogContactResult()" 
+                    class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+                    style="font-size: 14px; font-weight: 500;">
+              <span class="text-xs text-gray-500">Esc</span>
+              Cancel
+            </button>
+            <button (click)="saveLogContactResult()" 
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    style="font-size: 14px; font-weight: 500;">
+              <i class="pi pi-check text-xs"></i>
+              Done
+            </button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+      <!-- AI Assistant Button - Fixed at bottom right corner -->
+      <button (click)="showAiAssistant = true" 
+              class="fixed bottom-6 right-6 w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-50">
+        <i class="pi pi-star text-lg"></i>
+      </button>
 
     <!-- AI Assistant Dialog -->
     <p-dialog [(visible)]="showAiAssistant" 
@@ -278,6 +773,48 @@ import { CustomerService, Customer } from '../../services/customer.service';
       padding: 1rem 1.5rem;
       border-bottom: 1px solid #e5e7eb;
     }
+
+    :host ::ng-deep .customer-details-dialog .p-dialog-content {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: calc(90vh - 80px);
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .customer-details-dialog .p-dialog-header {
+      padding: 0;
+      border-bottom: none;
+      background: white;
+    }
+
+    :host ::ng-deep .customer-details-dialog {
+      border-radius: 8px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    :host ::ng-deep .customer-details-dialog .p-dialog {
+      border-radius: 8px;
+    }
+
+    /* Custom scrollbar styling */
+    :host ::ng-deep div[class*="max-h"]::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    :host ::ng-deep div[class*="max-h"]::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+
+    :host ::ng-deep div[class*="max-h"]::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    :host ::ng-deep div[class*="max-h"]::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -299,11 +836,26 @@ export class DashboardComponent implements OnInit {
   timeSensitive = false;
   showAiAssistant = false;
   aiQuery = '';
+  searchQuery = '';
   customerSortOrder: 'asc' | 'desc' | null = null;
+  showCustomerDetails = false;
+  selectedCustomerForDetails: Customer | null = null;
+  currentCustomerIndex = -1;
+  showLogContactResult = false;
+  contactOccurred: 'outbound' | 'inbound' = 'outbound';
+  contactMethod: ('phone' | 'text' | 'email')[] = [];
+  callResult: 'spoke' | 'left-message' | 'no-message' | null = null;
+  logContactComments = '';
+
+  callingPhone: string | null = null;
+  callingPhoneModal: string | null = null;
+  callMessage: { severity: string; message: string } | null = null;
+  callMessageModal: { severity: string; message: string } | null = null;
 
   constructor(
     private dashboardService: DashboardService,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private communicationService: CommunicationService
   ) {}
 
   ngOnInit() {
@@ -344,6 +896,18 @@ export class DashboardComponent implements OnInit {
         return false;
       }
       
+      // Filter by search query
+      if (this.searchQuery && this.searchQuery.trim() !== '') {
+        const searchTerm = this.searchQuery.toLowerCase().trim();
+        const fullName = (customer.fullName || (customer.firstName + ' ' + (customer.lastName || ''))).toLowerCase();
+        const email = (customer.email || '').toLowerCase();
+        const phone = (customer.phone || this.formatPhone(customer.phn1Nbr) || '').toLowerCase();
+        
+        if (!fullName.includes(searchTerm) && !email.includes(searchTerm) && !phone.includes(searchTerm)) {
+          return false;
+        }
+      }
+      
       // Filter by time sensitive if checkbox is checked
       if (this.timeSensitive) {
         const hasTimeSensitiveTag = this.getTimeSensitiveTag(customer) !== null;
@@ -370,6 +934,73 @@ export class DashboardComponent implements OnInit {
         }
       });
     }
+  }
+
+  getTodoCount(): number {
+    return this.todayCustomers.filter(customer => {
+      // Apply same filters as applyFilters but for todo items
+      // Exclude done items (for now, all items are todo)
+      // TODO: Update when done status is implemented
+      
+      // Filter by search query
+      if (this.searchQuery && this.searchQuery.trim() !== '') {
+        const searchTerm = this.searchQuery.toLowerCase().trim();
+        const fullName = (customer.fullName || (customer.firstName + ' ' + (customer.lastName || ''))).toLowerCase();
+        const email = (customer.email || '').toLowerCase();
+        const phone = (customer.phone || this.formatPhone(customer.phn1Nbr) || '').toLowerCase();
+        
+        if (!fullName.includes(searchTerm) && !email.includes(searchTerm) && !phone.includes(searchTerm)) {
+          return false;
+        }
+      }
+      
+      // Filter by time sensitive if checkbox is checked
+      if (this.timeSensitive) {
+        const hasTimeSensitiveTag = this.getTimeSensitiveTag(customer) !== null;
+        if (!hasTimeSensitiveTag) {
+          return false;
+        }
+      }
+      
+      // TODO: Apply OK to call filter when available
+      
+      // For now, all items are considered "todo" (done status not implemented yet)
+      return true;
+    }).length;
+  }
+
+  getDoneCount(): number {
+    return this.todayCustomers.filter(customer => {
+      // Apply same filters as applyFilters but for done items
+      // For now, done logic is not implemented, so return 0
+      // TODO: Update when done status is implemented
+      
+      // Filter by search query
+      if (this.searchQuery && this.searchQuery.trim() !== '') {
+        const searchTerm = this.searchQuery.toLowerCase().trim();
+        const fullName = (customer.fullName || (customer.firstName + ' ' + (customer.lastName || ''))).toLowerCase();
+        const email = (customer.email || '').toLowerCase();
+        const phone = (customer.phone || this.formatPhone(customer.phn1Nbr) || '').toLowerCase();
+        
+        if (!fullName.includes(searchTerm) && !email.includes(searchTerm) && !phone.includes(searchTerm)) {
+          return false;
+        }
+      }
+      
+      // Filter by time sensitive if checkbox is checked
+      if (this.timeSensitive) {
+        const hasTimeSensitiveTag = this.getTimeSensitiveTag(customer) !== null;
+        if (!hasTimeSensitiveTag) {
+          return false;
+        }
+      }
+      
+      // TODO: Apply OK to call filter when available
+      
+      // TODO: Check if customer is marked as done
+      // For now, return false as done status is not implemented
+      return false;
+    }).length;
   }
 
   sortByCustomerName() {
@@ -427,26 +1058,113 @@ export class DashboardComponent implements OnInit {
   }
 
   getContactMethod(customer: Customer): string {
-    // Use methodPref field
-    if (customer.methodPref) {
-      const methodMap: { [key: string]: string } = {
-        'Phone': 'Phone',
-        'Text': 'Text',
-        'Email': 'Email',
-        'SMS': 'Text'
-      };
-      return methodMap[customer.methodPref] || customer.methodPref;
+    // Normalize methodPref to one of the three allowed values: Phone, Email, or Text
+    const methodPref = customer.methodPref?.trim() || '';
+    
+    // Normalize common variations
+    const normalized = methodPref.toLowerCase();
+    
+    if (normalized === 'phone' || normalized === 'call') {
+      return 'Phone';
+    } else if (normalized === 'email' || normalized === 'e-mail') {
+      return 'Email';
+    } else if (normalized === 'text' || normalized === 'sms' || normalized === 'message') {
+      return 'Text';
     }
-    // Default to Phone if not specified
+    
+    // Default to Phone if not specified or doesn't match any known values
     return 'Phone';
   }
 
   viewCustomer(customer: Customer) {
     this.selectedCustomer = customer;
-    if (customer.customerId) {
-      // Navigate to customer details page
-      // this.router.navigate(['/customers', customer.customerId]);
+    // Don't open modal on row click - only on name click
+  }
+
+  openCustomerDetails(customer: Customer, event: Event) {
+    event.stopPropagation(); // Prevent row click
+    this.selectedCustomerForDetails = customer;
+    // Find the index in filtered list
+    this.currentCustomerIndex = this.filteredTodayCustomers.findIndex(c => c.customerId === customer.customerId);
+    this.showCustomerDetails = true;
+  }
+
+  closeCustomerDetails() {
+    this.showCustomerDetails = false;
+    this.selectedCustomerForDetails = null;
+    this.currentCustomerIndex = -1;
+  }
+
+  canNavigatePrev(): boolean {
+    return this.currentCustomerIndex > 0;
+  }
+
+  canNavigateNext(): boolean {
+    return this.currentCustomerIndex >= 0 && this.currentCustomerIndex < this.filteredTodayCustomers.length - 1;
+  }
+
+  navigateCustomer(direction: 'prev' | 'next') {
+    if (direction === 'prev' && this.canNavigatePrev()) {
+      this.currentCustomerIndex--;
+      this.selectedCustomerForDetails = this.filteredTodayCustomers[this.currentCustomerIndex];
+    } else if (direction === 'next' && this.canNavigateNext()) {
+      this.currentCustomerIndex++;
+      this.selectedCustomerForDetails = this.filteredTodayCustomers[this.currentCustomerIndex];
     }
+  }
+
+  getCurrentTime(): string {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes < 10 ? '0' + minutes : minutes;
+    return `${displayHours}:${displayMinutes}${ampm}`;
+  }
+
+  logContactResult() {
+    if (this.selectedCustomerForDetails) {
+      this.showLogContactResult = true;
+      // Reset form values
+      this.contactOccurred = 'outbound';
+      this.contactMethod = [];
+      this.callResult = null;
+      this.logContactComments = '';
+    }
+  }
+
+  closeLogContactResult() {
+    this.showLogContactResult = false;
+    this.contactOccurred = 'outbound';
+    this.contactMethod = [];
+    this.callResult = null;
+    this.logContactComments = '';
+  }
+
+  toggleContactMethod(method: 'phone' | 'text' | 'email') {
+    const index = this.contactMethod.indexOf(method);
+    if (index > -1) {
+      this.contactMethod.splice(index, 1);
+    } else {
+      this.contactMethod.push(method);
+    }
+  }
+
+  saveLogContactResult() {
+    // TODO: Implement save functionality - send to backend
+    console.log('Saving contact result:', {
+      customer: this.selectedCustomerForDetails,
+      contactOccurred: this.contactOccurred,
+      contactMethod: this.contactMethod,
+      callResult: this.callResult,
+      comments: this.logContactComments
+    });
+    
+    // Close modal after saving
+    this.closeLogContactResult();
+    // Optionally close customer details modal as well
+    // this.closeCustomerDetails();
   }
 
   formatPhone(phone: number | undefined): string {
@@ -456,6 +1174,15 @@ export class DashboardComponent implements OnInit {
       return `(${phoneStr.substring(0, 3)}) ${phoneStr.substring(3, 6)}-${phoneStr.substring(6)}`;
     }
     return phoneStr;
+  }
+
+  formatDate(date: string | undefined): string {
+    if (!date) return '-';
+    try {
+      return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+    } catch (e) {
+      return date;
+    }
   }
 
   openContactResult() {
@@ -493,6 +1220,127 @@ export class DashboardComponent implements OnInit {
       default:
         return 'bg-gray-100 text-gray-700';
     }
+  }
+
+  makePhoneCall(customer: Customer, event: Event) {
+    event.stopPropagation(); // Prevent row click
+    
+    const phoneNumber = customer.phone || this.formatPhone(customer.phn1Nbr);
+    if (!phoneNumber || phoneNumber === 'N/A') {
+      return;
+    }
+
+    this.callingPhone = phoneNumber;
+    this.callMessage = null;
+
+    const customerName = customer.fullName || 
+                        (customer.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : '') ||
+                        'Customer';
+
+    this.communicationService.initiateOutboundCall({
+      phoneNumber: phoneNumber.replace(/[^0-9+]/g, ''), // Clean phone number
+      customerId: customer.customerId || undefined,
+      customerName: customerName
+    }).subscribe({
+      next: (response) => {
+        this.callingPhone = null;
+        if (response.status === 'initiated' || response.status === 'success') {
+          this.callMessage = {
+            severity: 'success',
+            message: `Call initiated to ${phoneNumber}`
+          };
+          // Clear message after 3 seconds
+          setTimeout(() => {
+            this.callMessage = null;
+          }, 3000);
+        } else {
+          this.callMessage = {
+            severity: 'error',
+            message: response.message || 'Failed to initiate call'
+          };
+        }
+      },
+      error: (error) => {
+        this.callingPhone = null;
+        this.callMessage = {
+          severity: 'error',
+          message: error.error?.message || 'Error initiating call. Please try again.'
+        };
+        console.error('Error initiating call:', error);
+      }
+    });
+  }
+
+  isOkToCall(customer: Customer): boolean {
+    // Check if customer is OK to call
+    // For now, assume all customers shown in the modal are OK to call
+    // This can be enhanced to check a specific property on the customer object
+    // For example: return customer.okToCall === true || customer.status === 'OK_TO_CALL'
+    return true;
+  }
+
+  makePhoneCallFromModal(customer: Customer) {
+    if (!this.isOkToCall(customer)) {
+      this.callMessageModal = {
+        severity: 'warn',
+        message: 'This customer is not OK to call at this time.'
+      };
+      setTimeout(() => this.callMessageModal = null, 3000);
+      return;
+    }
+
+    const phoneNumber = customer.phone || this.formatPhone(customer.phn1Nbr);
+    if (!phoneNumber || phoneNumber === 'N/A' || phoneNumber === '-') {
+      this.callMessageModal = {
+        severity: 'error',
+        message: 'Phone number is not available.'
+      };
+      setTimeout(() => this.callMessageModal = null, 3000);
+      return;
+    }
+
+    this.callingPhoneModal = phoneNumber;
+    this.callMessageModal = null;
+
+    const customerName = customer.fullName || 
+                        (customer.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : '') ||
+                        'Customer';
+
+    this.communicationService.initiateOutboundCall({
+      phoneNumber: phoneNumber.replace(/[^0-9+]/g, ''), // Clean phone number
+      customerId: customer.customerId || undefined,
+      customerName: customerName
+    }).subscribe({
+      next: (response) => {
+        this.callingPhoneModal = null;
+        if (response.status === 'initiated' || response.status === 'success') {
+          this.callMessageModal = {
+            severity: 'success',
+            message: `Call initiated to ${phoneNumber}`
+          };
+          // Clear message after 3 seconds
+          setTimeout(() => {
+            this.callMessageModal = null;
+          }, 3000);
+        } else {
+          this.callMessageModal = {
+            severity: 'error',
+            message: response.message || 'Failed to initiate call'
+          };
+          setTimeout(() => this.callMessageModal = null, 5000);
+        }
+      },
+      error: (error) => {
+        this.callingPhoneModal = null;
+        const errorMessage = error.error?.message || 'Failed to initiate call. Please try again.';
+        this.callMessageModal = {
+          severity: 'error',
+          message: errorMessage
+        };
+        setTimeout(() => this.callMessageModal = null, 5000);
+        console.error('Error initiating call from modal:', error);
+      }
+    });
   }
 }
 

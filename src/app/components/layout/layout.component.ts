@@ -14,14 +14,31 @@ import { CustomerService } from '../../services/customer.service';
       <!-- Sidebar -->
       <aside class="w-64 bg-gray-100 flex flex-col">
         <!-- Logo -->
-        <div class="p-4 bg-gray-900 text-white flex items-center justify-between">
+        <div class="p-4 bg-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
-              <span class="text-gray-900 font-bold text-xl">W</span>
+            <div class="w-8 h-8 bg-blue-800 rounded flex items-center justify-center relative overflow-hidden" style="background-color: #1e3a8a;">
+              <svg class="w-5 h-5 text-white" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 8C2 8 4 6 6 6C8 6 10 8 10 8" 
+                      stroke="white" 
+                      stroke-width="2.5" 
+                      stroke-linecap="round"/>
+                <path d="M10 8C10 8 12 6 14 6C16 6 18 8 18 8" 
+                      stroke="white" 
+                      stroke-width="2.5" 
+                      stroke-linecap="round"/>
+                <path d="M2 8C2 8 4 10 6 10C8 10 10 8 10 8" 
+                      stroke="white" 
+                      stroke-width="2.5" 
+                      stroke-linecap="round"/>
+                <path d="M10 8C10 8 12 10 14 10C16 10 18 8 18 8" 
+                      stroke="white" 
+                      stroke-width="2.5" 
+                      stroke-linecap="round"/>
+              </svg>
             </div>
-            <span class="font-semibold text-lg">Wavze</span>
+            <span class="font-bold text-lg text-black">Wavze</span>
           </div>
-          <i class="pi pi-th-large text-gray-400 cursor-pointer hover:text-white"></i>
+          <i class="pi pi-th-large text-gray-600 cursor-pointer hover:text-gray-900"></i>
         </div>
 
         <!-- Navigation -->
@@ -82,8 +99,10 @@ import { CustomerService } from '../../services/customer.service';
             <button (click)="showWelcome = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
               <i class="pi pi-times text-xs"></i>
             </button>
-            <div class="flex items-start gap-2 pr-6">
-              <i class="pi pi-lightbulb text-blue-600 mt-0.5"></i>
+            <div class="flex items-start gap-3 pr-6">
+              <div class="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="pi pi-lightbulb text-black" style="font-size: 0.875rem; line-height: 1;"></i>
+              </div>
               <div class="text-sm">
                 <p class="font-semibold mb-1 text-gray-900">Welcome to Wavze early release.</p>
                 <p class="text-gray-700 text-xs leading-relaxed">We hope you find it useful. Do let us know how we can make it better for you.</p>

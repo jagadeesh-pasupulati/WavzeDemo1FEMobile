@@ -9,14 +9,31 @@ import { RouterModule } from '@angular/router';
   template: `
     <aside class="w-64 bg-gray-100 min-h-screen fixed left-0 top-0 flex flex-col">
       <!-- Logo -->
-      <div class="bg-blue-900 text-white p-4 flex items-center justify-between">
+      <div class="bg-gray-100 p-4 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
-            <span class="text-blue-900 font-bold text-xl">W</span>
+          <div class="w-8 h-8 bg-blue-800 rounded flex items-center justify-center relative overflow-hidden" style="background-color: #1e3a8a;">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 8C2 8 4 6 6 6C8 6 10 8 10 8" 
+                    stroke="white" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"/>
+              <path d="M10 8C10 8 12 6 14 6C16 6 18 8 18 8" 
+                    stroke="white" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"/>
+              <path d="M2 8C2 8 4 10 6 10C8 10 10 8 10 8" 
+                    stroke="white" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"/>
+              <path d="M10 8C10 8 12 10 14 10C16 10 18 8 18 8" 
+                    stroke="white" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"/>
+            </svg>
           </div>
-          <span class="font-semibold text-lg">Wavze</span>
+          <span class="font-bold text-lg text-black">Wavze</span>
         </div>
-        <i class="pi pi-th-large text-white cursor-pointer"></i>
+        <i class="pi pi-th-large text-gray-600 cursor-pointer hover:text-gray-900"></i>
       </div>
 
       <!-- Navigation -->
@@ -75,7 +92,9 @@ import { RouterModule } from '@angular/router';
           <i class="pi pi-times"></i>
         </button>
         <div class="flex items-start space-x-3">
-          <i class="pi pi-lightbulb text-blue-600 mt-1"></i>
+          <div class="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+            <i class="pi pi-lightbulb text-black" style="font-size: 0.875rem; line-height: 1;"></i>
+          </div>
           <div class="text-sm text-gray-700">
             <p class="font-semibold mb-1">Welcome to Wavze early release.</p>
             <p>We hope you find it useful. Do let us know how we can make it better for you.</p>
