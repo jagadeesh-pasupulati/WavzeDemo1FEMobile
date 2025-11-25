@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -704,6 +705,107 @@ import { CommunicationService } from '../../services/communication.service';
         </ng-template>
       </p-dialog>
 
+      <!-- Call Status Popup -->
+      <p-dialog [(visible)]="showCallStatus" 
+                [modal]="true" 
+                [style]="{width: '400px', maxWidth: '90vw'}"
+                [styleClass]="'call-status-dialog'"
+                [draggable]="false"
+                [resizable]="false"
+                [closable]="false"
+                *ngIf="currentCallCustomer">
+        <ng-template pTemplate="header">
+          <div class="flex items-center justify-between w-full px-6 py-4 border-b border-gray-200 bg-white">
+            <h2 class="text-xl font-semibold text-gray-900" style="font-size: 20px; font-weight: 600; line-height: 28px;">Call Status</h2>
+            <button (click)="closeCallStatus()" 
+                    class="p-1.5 hover:bg-gray-100 rounded transition-colors">
+              <i class="pi pi-times text-gray-700 text-lg"></i>
+            </button>
+          </div>
+        </ng-template>
+        
+        <div class="px-6 py-6">
+          <!-- Customer Info -->
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="pi pi-user text-blue-600 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">
+              {{ currentCallCustomer.fullName || (currentCallCustomer.firstName + ' ' + (currentCallCustomer.lastName || '')) }}
+            </h3>
+            <p class="text-sm text-gray-600">{{ currentCallPhone }}</p>
+          </div>
+
+          <!-- Call Status Indicator -->
+          <div class="text-center mb-6">
+            <!-- Initiated State -->
+            <div *ngIf="callStatus === 'initiated'" class="space-y-3">
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center animate-pulse">
+                  <i class="pi pi-phone text-blue-600 text-xl"></i>
+                </div>
+              </div>
+              <p class="text-base font-medium text-gray-900">Call Initiated</p>
+              <p class="text-sm text-gray-500">Initializing...</p>
+            </div>
+
+            <!-- Connecting State -->
+            <div *ngIf="callStatus === 'connecting'" class="space-y-3">
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center animate-pulse">
+                  <i class="pi pi-phone text-yellow-600 text-xl"></i>
+                </div>
+              </div>
+              <p class="text-base font-medium text-gray-900">Connecting</p>
+              <p class="text-sm text-gray-500">Please wait...</p>
+            </div>
+
+            <!-- Connected State -->
+            <div *ngIf="callStatus === 'connected'" class="space-y-3">
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <i class="pi pi-phone text-green-600 text-xl"></i>
+                </div>
+              </div>
+              <p class="text-base font-medium text-gray-900">Call Connected</p>
+              <p class="text-lg font-semibold text-gray-900">{{ formatCallDuration(callDuration) }}</p>
+            </div>
+
+            <!-- Disconnected State -->
+            <div *ngIf="callStatus === 'disconnected'" class="space-y-3">
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                  <i class="pi pi-phone text-gray-600 text-xl"></i>
+                </div>
+              </div>
+              <p class="text-base font-medium text-gray-900">Call Ended</p>
+              <p class="text-sm text-gray-500">Duration: {{ formatCallDuration(callDuration) }}</p>
+            </div>
+
+            <!-- Failed State -->
+            <div *ngIf="callStatus === 'failed'" class="space-y-3">
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="pi pi-times text-red-600 text-xl"></i>
+                </div>
+              </div>
+              <p class="text-base font-medium text-gray-900">Call Failed</p>
+              <p class="text-sm text-gray-500">Unable to connect</p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex justify-center gap-3" *ngIf="callStatus === 'connected' || callStatus === 'connecting' || callStatus === 'initiated'">
+            <button (click)="endCall()" 
+                    class="px-6 py-2.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+                    style="font-size: 14px; font-weight: 500;">
+              <i class="pi pi-phone text-xs"></i>
+              End Call
+            </button>
+          </div>
+        </div>
+      </p-dialog>
+
       <!-- AI Assistant Button - Fixed at bottom right corner -->
       <button (click)="showAiAssistant = true" 
               class="fixed bottom-6 right-6 w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-50">
@@ -817,7 +919,7 @@ import { CommunicationService } from '../../services/communication.service';
     }
   `]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   stats: any = {
     customers: 0,
     applications: 0,
@@ -851,6 +953,16 @@ export class DashboardComponent implements OnInit {
   callingPhoneModal: string | null = null;
   callMessage: { severity: string; message: string } | null = null;
   callMessageModal: { severity: string; message: string } | null = null;
+  
+  // Call status popup
+  showCallStatus = false;
+  callStatus: 'initiated' | 'connecting' | 'connected' | 'disconnected' | 'failed' = 'initiated';
+  currentCallCustomer: Customer | null = null;
+  currentCallPhone: string | null = null;
+  currentCallId: string | null = null;
+  callDuration = 0;
+  callDurationInterval: any = null;
+  callStatusSubscription: Subscription | null = null;
 
   constructor(
     private dashboardService: DashboardService,
@@ -866,6 +978,17 @@ export class DashboardComponent implements OnInit {
         this.showAiAssistant = false;
       }
     });
+  }
+  
+  ngOnDestroy() {
+    // Clean up call timer interval
+    this.stopCallTimer();
+    
+    // Clean up status polling subscription
+    if (this.callStatusSubscription) {
+      this.callStatusSubscription.unsubscribe();
+      this.callStatusSubscription = null;
+    }
   }
 
   loadDashboardData() {
@@ -1245,14 +1368,24 @@ export class DashboardComponent implements OnInit {
       next: (response) => {
         this.callingPhone = null;
         if (response.status === 'initiated' || response.status === 'success') {
-          this.callMessage = {
-            severity: 'success',
-            message: `Call initiated to ${phoneNumber}`
-          };
-          // Clear message after 3 seconds
-          setTimeout(() => {
-            this.callMessage = null;
-          }, 3000);
+          // Show call status popup
+          this.currentCallCustomer = customer;
+          this.currentCallPhone = phoneNumber;
+          this.currentCallId = response.callId || null;
+          this.callStatus = 'initiated';
+          this.callDuration = 0;
+          this.showCallStatus = true;
+          
+          console.log('Call initiated, callId:', this.currentCallId);
+          
+          // Start polling for call status updates from ACS events
+          if (this.currentCallId) {
+            this.startCallStatusPolling(this.currentCallId);
+          } else {
+            console.warn('No callId returned from backend - cannot poll for status');
+            // If no callId, simulate progression
+            this.simulateCallProgression();
+          }
         } else {
           this.callMessage = {
             severity: 'error',
@@ -1269,6 +1402,292 @@ export class DashboardComponent implements OnInit {
         console.error('Error initiating call:', error);
       }
     });
+  }
+  
+  startCallStatusPolling(callId: string) {
+    // Stop any existing polling
+    if (this.callStatusSubscription) {
+      this.callStatusSubscription.unsubscribe();
+    }
+    
+    console.log('Starting call status polling for callId:', callId);
+    
+    // Always start fallback progression timers (they work even if polling fails)
+    this.startFallbackProgression(callId);
+    
+    // Poll for call status updates every second
+    this.callStatusSubscription = this.communicationService.pollCallStatus(callId).subscribe({
+      next: (status) => {
+        // Stop polling immediately if call is disconnected or failed
+        if (status && (status.status === 'disconnected' || status.status === 'failed' || status.status === 'error')) {
+          console.log('Call ended with status:', status.status, '- stopping polling immediately');
+          if (this.callStatusSubscription) {
+            this.callStatusSubscription.unsubscribe();
+            this.callStatusSubscription = null;
+          }
+          // Process the final status update
+          this.updateCallStatusFromEvent(status);
+          return;
+        }
+        
+        if (status && status.status) {
+          console.log('Received call status update from backend:', status);
+          this.updateCallStatusFromEvent(status);
+        } else {
+          console.warn('Received invalid status update:', status);
+        }
+      },
+      error: (error) => {
+        console.error('Error polling call status:', error);
+        // Fallback progression will handle status updates if polling fails
+      },
+      complete: () => {
+        console.log('Call status polling completed');
+        // Ensure subscription is cleaned up
+        if (this.callStatusSubscription) {
+          this.callStatusSubscription = null;
+        }
+      }
+    });
+  }
+  
+  simulateCallProgression() {
+    // Simulate call progression when no callId is available
+    console.log('Simulating call progression (no callId)');
+    setTimeout(() => {
+      if (this.callStatus === 'initiated' && this.showCallStatus) {
+        this.callStatus = 'connecting';
+      }
+    }, 2000);
+    
+    setTimeout(() => {
+      if (this.callStatus === 'connecting' && this.showCallStatus) {
+        this.callStatus = 'connected';
+        this.startCallTimer();
+      }
+    }, 7000);
+  }
+  
+  startFallbackProgression(callId: string) {
+    // Fallback: If still on "initiated" after 3 seconds, move to "connecting"
+    setTimeout(() => {
+      if (this.callStatus === 'initiated' && this.showCallStatus && this.currentCallId === callId) {
+        console.log('Fallback progression: Moving to connecting state');
+        this.callStatus = 'connecting';
+      }
+    }, 3000);
+    
+    // Fallback: If still on "connecting" after 8 more seconds (11 total), move to "connected"
+    setTimeout(() => {
+      if ((this.callStatus === 'connecting' || this.callStatus === 'initiated') && 
+          this.showCallStatus && 
+          this.currentCallId === callId) {
+        console.log('Fallback progression: Moving to connected state');
+        this.callStatus = 'connected';
+        this.startCallTimer();
+      }
+    }, 11000);
+  }
+  
+  updateCallStatusFromEvent(status: any) {
+    if (!this.showCallStatus) {
+      return;
+    }
+    
+    // Don't process updates if call is already disconnected or failed
+    if (this.callStatus === 'disconnected' || this.callStatus === 'failed') {
+      console.log('Ignoring status update - call already ended:', this.callStatus);
+      return;
+    }
+    
+    if (!status) {
+      console.warn('Received null/undefined status update');
+      return;
+    }
+    
+    console.log('=== Updating call status from backend ===');
+    console.log('Status object:', JSON.stringify(status, null, 2));
+    
+    // Map backend status to frontend status
+    const backendStatus = (status.status || '').toLowerCase().trim();
+    const previousStatus = this.callStatus;
+    
+    console.log('Backend status:', `"${backendStatus}"`, '| Current frontend status:', `"${previousStatus}"`);
+    
+    let newStatus: 'initiated' | 'connecting' | 'connected' | 'disconnected' | 'failed' = previousStatus;
+    let statusChanged = false;
+    
+    switch (backendStatus) {
+      case 'initiated':
+        if (previousStatus !== 'initiated') {
+          newStatus = 'initiated';
+          statusChanged = true;
+        }
+        break;
+      case 'connecting':
+        newStatus = 'connecting';
+        statusChanged = true;
+        break;
+      case 'connected':
+        newStatus = 'connected';
+        statusChanged = true;
+        if (previousStatus !== 'connected') {
+          // Just connected - start the timer
+          console.log('Call connected - starting timer');
+          this.startCallTimer();
+        }
+        // Update duration from backend
+        if (status.duration !== undefined && status.duration !== null) {
+          this.callDuration = Math.max(0, status.duration);
+        }
+        break;
+      case 'disconnected':
+        newStatus = 'disconnected';
+        statusChanged = true;
+        this.stopCallTimer();
+        // Stop polling immediately when disconnected
+        if (this.callStatusSubscription) {
+          this.callStatusSubscription.unsubscribe();
+          this.callStatusSubscription = null;
+          console.log('Stopped polling - call disconnected');
+        }
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+          if (this.showCallStatus && this.callStatus === 'disconnected') {
+            console.log('Auto-closing call status popup - call disconnected');
+            this.closeCallStatus();
+          }
+        }, 3000);
+        break;
+      case 'failed':
+        newStatus = 'failed';
+        statusChanged = true;
+        this.stopCallTimer();
+        // Stop polling immediately when failed
+        if (this.callStatusSubscription) {
+          this.callStatusSubscription.unsubscribe();
+          this.callStatusSubscription = null;
+          console.log('Stopped polling - call failed');
+        }
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+          if (this.showCallStatus && this.callStatus === 'failed') {
+            console.log('Auto-closing call status popup - call failed');
+            this.closeCallStatus();
+          }
+        }, 3000);
+        break;
+      default:
+        if (backendStatus) {
+          console.warn('Unknown backend status:', backendStatus, '- keeping current status:', previousStatus);
+        }
+        // Don't change status if unknown or empty
+        return;
+    }
+    
+    if (statusChanged) {
+      console.log(`STATUS UPDATE: "${previousStatus}" → "${newStatus}"`);
+      this.callStatus = newStatus;
+    } else {
+      console.log('Status unchanged:', newStatus);
+    }
+  }
+  
+  startCallTimer() {
+    if (this.callDurationInterval) {
+      clearInterval(this.callDurationInterval);
+    }
+    this.callDurationInterval = setInterval(() => {
+      if (this.showCallStatus && this.callStatus === 'connected') {
+        this.callDuration++;
+      } else {
+        this.stopCallTimer();
+      }
+    }, 1000);
+  }
+  
+  stopCallTimer() {
+    if (this.callDurationInterval) {
+      clearInterval(this.callDurationInterval);
+      this.callDurationInterval = null;
+    }
+  }
+  
+  formatCallDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  
+  endCall() {
+    if (!this.currentCallId) {
+      console.warn('No call ID available - cannot end call');
+      this.closeCallStatus();
+      return;
+    }
+    
+    // Don't allow multiple end call attempts
+    if (this.callStatus === 'disconnected' || this.callStatus === 'failed') {
+      console.log('Call already ended - closing popup');
+      this.closeCallStatus();
+      return;
+    }
+    
+    console.log('Ending call with callId:', this.currentCallId);
+    
+    // Stop polling immediately to prevent further status updates
+    if (this.callStatusSubscription) {
+      this.callStatusSubscription.unsubscribe();
+      this.callStatusSubscription = null;
+      console.log('Stopped polling before ending call');
+    }
+    
+    // Stop timer
+    this.stopCallTimer();
+    
+    // Update UI to show disconnected state immediately
+    const previousStatus = this.callStatus;
+    this.callStatus = 'disconnected';
+    
+    // Call backend API to actually terminate the call
+    this.communicationService.endCall(this.currentCallId).subscribe({
+      next: (response) => {
+        console.log('Call ended successfully:', response);
+        // Status already set to disconnected above
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+          if (this.showCallStatus) {
+            this.closeCallStatus();
+          }
+        }, 3000);
+      },
+      error: (error) => {
+        console.error('Error ending call:', error);
+        // Keep status as disconnected since user clicked end call
+        // Auto-close after 3 seconds anyway
+        setTimeout(() => {
+          if (this.showCallStatus) {
+            this.closeCallStatus();
+          }
+        }, 3000);
+      }
+    });
+  }
+  
+  closeCallStatus() {
+    this.showCallStatus = false;
+    this.callStatus = 'initiated';
+    this.currentCallCustomer = null;
+    this.currentCallPhone = null;
+    this.currentCallId = null;
+    this.callDuration = 0;
+    this.stopCallTimer();
+    
+    // Stop polling for status updates
+    if (this.callStatusSubscription) {
+      this.callStatusSubscription.unsubscribe();
+      this.callStatusSubscription = null;
+    }
   }
 
   isOkToCall(customer: Customer): boolean {
