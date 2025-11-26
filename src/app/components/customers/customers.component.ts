@@ -67,7 +67,7 @@ import { CustomerService, Customer } from '../../services/customer.service';
         <!-- Customers Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div class="overflow-x-auto">
-            <div class="relative max-h-[600px] overflow-y-auto customers-table-scrollbar">
+            <div class="relative max-h-[660px] overflow-y-auto customers-table-scrollbar">
               <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>

@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,6 +12,7 @@ import { MenuModule } from 'primeng/menu';
 import { DashboardService } from '../../services/dashboard.service';
 import { CustomerService, Customer } from '../../services/customer.service';
 import { CommunicationService } from '../../services/communication.service';
+import { CallSummaryService } from '../../services/call-summary.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,9 +32,17 @@ import { CommunicationService } from '../../services/communication.service';
           </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-lg p-6 shadow-sm">
+        <!-- Stats Cards - Draggable (Constrained to Home Page Area) -->
+        <div class="relative mb-6" 
+             style="height: 160px;"
+             #cardsContainer>
+          <!-- Customers Card -->
+          <div class="bg-white rounded-lg p-6 shadow-sm cursor-move absolute"
+               style="width: 256px; height: 160px;"
+               [style.left.px]="cardPositions.customers.x"
+               [style.top.px]="cardPositions.customers.y"
+               (mousedown)="startCardDrag($event, 'customers')"
+               [class.dragging]="draggingCard === 'customers'">
             <div class="flex items-center justify-between mb-2">
               <i class="pi pi-users text-green-500 text-2xl"></i>
               <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">30d</span>
@@ -46,7 +55,14 @@ import { CommunicationService } from '../../services/communication.service';
             </p>
             <p class="text-xs text-gray-500 mt-2" *ngIf="stats.customerGrowth === 0">-0.0%</p>
           </div>
-          <div class="bg-white rounded-lg p-6 shadow-sm">
+          
+          <!-- Applications Card -->
+          <div class="bg-white rounded-lg p-6 shadow-sm cursor-move absolute"
+               style="width: 256px; height: 160px;"
+               [style.left.px]="cardPositions.applications.x"
+               [style.top.px]="cardPositions.applications.y"
+               (mousedown)="startCardDrag($event, 'applications')"
+               [class.dragging]="draggingCard === 'applications'">
             <div class="flex items-center justify-between mb-2">
               <i class="pi pi-file text-blue-500 text-2xl"></i>
               <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">30d</span>
@@ -55,9 +71,17 @@ import { CommunicationService } from '../../services/communication.service';
             <p class="text-2xl font-bold">{{ stats.applications }}</p>
             <p class="text-xs text-gray-500 mt-2">-0.0%</p>
           </div>
-          <div class="bg-white rounded-lg p-6 shadow-sm">
+          
+          <!-- Business won Card -->
+          <div class="bg-white rounded-lg p-6 shadow-sm cursor-move absolute"
+               style="width: 256px; height: 160px;"
+               [style.left.px]="cardPositions.businessWon.x"
+               [style.top.px]="cardPositions.businessWon.y"
+               (mousedown)="startCardDrag($event, 'businessWon')"
+               [class.dragging]="draggingCard === 'businessWon'">
             <div class="flex items-center justify-between mb-2">
               <i class="pi pi-dollar text-green-500 text-2xl"></i>
+              <span></span>
             </div>
             <p class="text-sm text-gray-600 mb-1">Business won</p>
             <p class="text-2xl font-bold">{{ stats.businessWon }}</p>
@@ -65,22 +89,27 @@ import { CommunicationService } from '../../services/communication.service';
               <i class="pi pi-arrow-up text-xs"></i>
               +{{ stats.businessGrowth | number:'1.1-1' }}%
             </p>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="stats.businessGrowth === 0"></p>
           </div>
-          <div class="bg-white rounded-lg p-6 shadow-sm">
+          
+          <!-- Win rate Card -->
+          <div class="bg-white rounded-lg p-6 shadow-sm cursor-move absolute"
+               style="width: 256px; height: 160px;"
+               [style.left.px]="cardPositions.winRate.x"
+               [style.top.px]="cardPositions.winRate.y"
+               (mousedown)="startCardDrag($event, 'winRate')"
+               [class.dragging]="draggingCard === 'winRate'">
             <div class="flex items-center justify-between mb-2">
-              <i class="pi pi-trophy text-yellow-500 text-2xl"></i>
+              <span></span>
+              <span></span>
             </div>
-            <div class="text-sm text-gray-600 mb-1 flex items-center gap-2">
-              <div class="w-6 h-6 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center shadow-md" style="box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5), 0 0 12px rgba(251, 191, 36, 0.3);">
-                <i class="pi pi-trophy text-yellow-700 text-sm" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));"></i>
-              </div>
-              Win rate
-            </div>
+            <p class="text-sm text-gray-600 mb-1">Win rate</p>
             <p class="text-2xl font-bold">{{ stats.winRate }}</p>
             <p class="text-xs text-yellow-600 mt-2 flex items-center gap-1" *ngIf="stats.winRateChange < 0">
               <i class="pi pi-arrow-down text-xs"></i>
               {{ stats.winRateChange | number:'1.1-1' }}%
             </p>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="stats.winRateChange >= 0"></p>
           </div>
         </div>
 
@@ -164,7 +193,7 @@ import { CommunicationService } from '../../services/communication.service';
 
           <!-- Table -->
           <div class="overflow-x-auto">
-            <div class="relative max-h-[360px] overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9;">
+            <div class="relative max-h-[430px] overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9;">
               <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
@@ -706,6 +735,7 @@ import { CommunicationService } from '../../services/communication.service';
       </p-dialog>
 
       <!-- Call Status Popup -->
+      <!-- Call Status Popup -->
       <p-dialog [(visible)]="showCallStatus" 
                 [modal]="true" 
                 [style]="{width: '400px', maxWidth: '90vw'}"
@@ -795,20 +825,58 @@ import { CommunicationService } from '../../services/communication.service';
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex justify-center gap-3" *ngIf="callStatus === 'connected' || callStatus === 'connecting' || callStatus === 'initiated'">
+          <div class="flex justify-center gap-2" *ngIf="callStatus === 'connected' || callStatus === 'connecting' || callStatus === 'initiated'">
+            <!-- Audio ON Button -->
+            <button (click)="toggleAudio()" 
+                    [class.bg-blue-600]="!audioMuted"
+                    [class.bg-gray-300]="audioMuted"
+                    [class.text-white]="!audioMuted"
+                    [class.text-gray-700]="audioMuted"
+                    class="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                    style="font-size: 12px; font-weight: 500; padding: 6px 10px;">
+              <i class="pi pi-microphone" style="font-size: 11px;"></i>
+              <span>Audio ON</span>
+            </button>
+            
+            <!-- Audio OFF Button -->
+            <button (click)="toggleAudio()" 
+                    [class.bg-blue-600]="audioMuted"
+                    [class.bg-gray-300]="!audioMuted"
+                    [class.text-white]="audioMuted"
+                    [class.text-gray-700]="!audioMuted"
+                    class="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                    style="font-size: 12px; font-weight: 500; padding: 6px 10px;">
+              <div class="relative inline-flex items-center justify-center" style="width: 11px; height: 11px;">
+                <i class="pi pi-microphone absolute" style="font-size: 11px;"></i>
+                <svg class="absolute" style="width: 13px; height: 13px; top: -1px; left: -1px;" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="1.5" y1="11.5" x2="11.5" y2="1.5"></line>
+                </svg>
+              </div>
+              <span>Audio OFF</span>
+            </button>
+            
+            <!-- End Call Button -->
             <button (click)="endCall()" 
-                    class="px-6 py-2.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
-                    style="font-size: 14px; font-weight: 500;">
-              <i class="pi pi-phone text-xs"></i>
-              End Call
+                    class="px-2.5 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                    style="font-size: 12px; font-weight: 500; padding: 6px 10px;">
+              <i class="pi pi-phone" style="font-size: 11px;"></i>
+              <span>End Call</span>
             </button>
           </div>
         </div>
       </p-dialog>
 
-      <!-- AI Assistant Button - Fixed at bottom right corner -->
-      <button (click)="showAiAssistant = true" 
-              class="fixed bottom-6 right-6 w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-50">
+      <!-- AI Assistant Button - Draggable -->
+      <button 
+              [style.position]="'fixed'"
+              [style.left.px]="aiAssistantPosition.x"
+              [style.top.px]="aiAssistantPosition.y"
+              [style.bottom]="'auto'"
+              [style.right]="'auto'"
+              (mousedown)="startDrag($event)"
+              (click)="onAiAssistantClick($event)"
+              class="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-colors flex items-center justify-center z-50 cursor-move"
+              [class.dragging]="isDragging">
         <i class="pi pi-star text-lg"></i>
       </button>
 
@@ -838,12 +906,12 @@ import { CommunicationService } from '../../services/communication.service';
       <div class="flex flex-col h-full">
         <!-- Content area with placeholders -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
-          <!-- Light gray rectangular placeholders for AI responses -->
-          <div class="bg-gray-100 rounded h-16 w-full"></div>
-          <div class="bg-gray-100 rounded h-20 w-full"></div>
-          <div class="bg-gray-100 rounded h-16 w-3/4"></div>
-          <div class="bg-gray-100 rounded h-24 w-full"></div>
-          <div class="bg-gray-100 rounded h-16 w-5/6"></div>
+          <!-- Light gray rectangular placeholders with dotted borders for AI responses -->
+          <div class="border-2 border-dashed border-gray-300 bg-gray-50 rounded h-16 w-full"></div>
+          <div class="border-2 border-dashed border-gray-300 bg-gray-50 rounded h-20 w-full"></div>
+          <div class="border-2 border-dashed border-gray-300 bg-gray-50 rounded h-16 w-3/4"></div>
+          <div class="border-2 border-dashed border-gray-300 bg-gray-50 rounded h-24 w-full"></div>
+          <div class="border-2 border-dashed border-gray-300 bg-gray-50 rounded h-16 w-5/6"></div>
         </div>
         <!-- Input area at bottom -->
         <div class="border-t border-gray-200 p-4">
@@ -864,6 +932,15 @@ import { CommunicationService } from '../../services/communication.service';
     </p-dialog>
   `,
   styles: [`
+    :host ::ng-deep .ai-assistant-dialog {
+      margin: 0;
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      left: auto;
+    }
+
     :host ::ng-deep .ai-assistant-dialog .p-dialog-content {
       padding: 0;
       height: calc(600px - 60px);
@@ -874,6 +951,37 @@ import { CommunicationService } from '../../services/communication.service';
     :host ::ng-deep .ai-assistant-dialog .p-dialog-header {
       padding: 1rem 1.5rem;
       border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* Card dragging styles */
+    .dragging {
+      opacity: 0.8;
+      transform: scale(1.02);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+      z-index: 1000;
+      transition: none;
+    }
+
+    /* Call Status Dialog Styles */
+    :host ::ng-deep .call-status-dialog {
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    :host ::ng-deep .call-status-dialog .p-dialog-header {
+      display: none;
+      padding: 0;
+      border: none;
+    }
+
+    :host ::ng-deep .call-status-dialog .p-dialog-content {
+      padding: 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .call-status-dialog .p-dialog {
+      border-radius: 8px;
     }
 
     :host ::ng-deep .customer-details-dialog .p-dialog-content {
@@ -938,6 +1046,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
   timeSensitive = false;
   showAiAssistant = false;
   aiQuery = '';
+  aiAssistantPosition = { x: 0, y: 0 };
+  isDragging = false;
+  dragOffset = { x: 0, y: 0 };
+  hasDragged = false;
+  dragStartPosition = { x: 0, y: 0 };
+  
+  // Card dragging properties
+  draggingCard: 'customers' | 'applications' | 'businessWon' | 'winRate' | null = null;
+  cardDragOffset = { x: 0, y: 0 };
+  cardDragStartPosition = { x: 0, y: 0 };
+  cardPositions = {
+    customers: { x: 0, y: 0 },
+    applications: { x: 0, y: 0 },
+    businessWon: { x: 0, y: 0 },
+    winRate: { x: 0, y: 0 }
+  };
+  
   searchQuery = '';
   customerSortOrder: 'asc' | 'desc' | null = null;
   showCustomerDetails = false;
@@ -963,21 +1088,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
   callDuration = 0;
   callDurationInterval: any = null;
   callStatusSubscription: Subscription | null = null;
+  audioMuted = false;
+  callStartTime: Date | null = null;
 
   constructor(
     private dashboardService: DashboardService,
     private customerService: CustomerService,
-    private communicationService: CommunicationService
+    private communicationService: CommunicationService,
+    private router: Router,
+    private callSummaryService: CallSummaryService
   ) {}
 
   ngOnInit() {
     this.loadDashboardData();
+    // Initialize AI Assistant button position to bottom right corner
+    this.initializeAiAssistantPosition();
+    
+    // Initialize card positions in a grid layout
+    this.initializeCardPositions();
+    
     // Handle Esc key to close AI Assistant
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && this.showAiAssistant) {
         this.showAiAssistant = false;
       }
     });
+    
+    // Set up global mouse move and mouse up listeners for dragging
+    document.addEventListener('mousemove', this.onMouseMove.bind(this));
+    document.addEventListener('mouseup', this.onMouseUp.bind(this));
+    document.addEventListener('mousemove', this.onCardMouseMove.bind(this));
+    document.addEventListener('mouseup', this.onCardMouseUp.bind(this));
   }
   
   ngOnDestroy() {
@@ -988,6 +1129,214 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.callStatusSubscription) {
       this.callStatusSubscription.unsubscribe();
       this.callStatusSubscription = null;
+    }
+    
+    // Clean up drag event listeners
+    document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    document.removeEventListener('mouseup', this.onMouseUp.bind(this));
+    document.removeEventListener('mousemove', this.onCardMouseMove.bind(this));
+    document.removeEventListener('mouseup', this.onCardMouseUp.bind(this));
+  }
+  
+  initializeCardPositions() {
+    // Wait for DOM to render, then calculate equal spacing
+    setTimeout(() => {
+      const container = document.querySelector('.relative.mb-6');
+      if (!container) {
+        // Retry if container not found
+        setTimeout(() => this.initializeCardPositions(), 100);
+        return;
+      }
+      
+      const containerRect = container.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      
+      const cardWidth = 256; // Fixed card width (w-64)
+      const numberOfCards = 4;
+      const topOffset = 0; // Start from top of container
+      
+      // Calculate total width needed for all cards
+      const totalCardsWidth = cardWidth * numberOfCards;
+      
+      // Calculate remaining space to distribute equally
+      const remainingSpace = containerWidth - totalCardsWidth;
+      
+      // Calculate equal gap between cards (distribute remaining space equally)
+      // We have 3 gaps between 4 cards, plus margins on left and right
+      const equalGap = remainingSpace / (numberOfCards + 1);
+      
+      // Calculate positions with equal spacing
+      // First card starts after first gap, subsequent cards have equal spacing
+      this.cardPositions = {
+        customers: { x: equalGap, y: topOffset },
+        applications: { x: equalGap + cardWidth + equalGap, y: topOffset },
+        businessWon: { x: equalGap + (cardWidth + equalGap) * 2, y: topOffset },
+        winRate: { x: equalGap + (cardWidth + equalGap) * 3, y: topOffset }
+      };
+    }, 50);
+  }
+  
+  initializeAiAssistantPosition() {
+    // Set initial position to bottom right corner (default position)
+    // Account for button size (48px) and spacing (24px = 6 * 4px)
+    setTimeout(() => {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      this.aiAssistantPosition = {
+        x: windowWidth - 72, // 48px button + 24px margin
+        y: windowHeight - 72 // 48px button + 24px margin
+      };
+    }, 0);
+  }
+  
+  startDrag(event: MouseEvent) {
+    this.isDragging = true;
+    this.hasDragged = false;
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    this.dragOffset = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+    this.dragStartPosition = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  onMouseMove(event: MouseEvent) {
+    if (this.isDragging) {
+      // Check if we've moved enough to consider this a drag (more than 5px)
+      const moveDistance = Math.sqrt(
+        Math.pow(event.clientX - this.dragStartPosition.x, 2) + 
+        Math.pow(event.clientY - this.dragStartPosition.y, 2)
+      );
+      
+      if (moveDistance > 5) {
+        this.hasDragged = true;
+      }
+      
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const buttonSize = 48; // 12 * 4px = 48px (w-12 h-12)
+      const margin = 6; // Margin from edges
+      
+      // Calculate new position (subtract drag offset to keep cursor position relative to button)
+      let newX = event.clientX - this.dragOffset.x;
+      let newY = event.clientY - this.dragOffset.y;
+      
+      // Constrain to screen boundaries
+      newX = Math.max(margin, Math.min(newX, windowWidth - buttonSize - margin));
+      newY = Math.max(margin, Math.min(newY, windowHeight - buttonSize - margin));
+      
+      this.aiAssistantPosition = { x: newX, y: newY };
+      event.preventDefault();
+    }
+  }
+  
+  onMouseUp(event: MouseEvent) {
+    if (this.isDragging) {
+      // Check if this was actually a drag (moved more than threshold)
+      const moveDistance = Math.sqrt(
+        Math.pow(event.clientX - this.dragStartPosition.x, 2) + 
+        Math.pow(event.clientY - this.dragStartPosition.y, 2)
+      );
+      
+      const wasActuallyDragged = moveDistance > 5;
+      
+      // Reset dragging state
+      this.isDragging = false;
+      
+      // If it was actually dragged, prevent the click event
+      if (wasActuallyDragged) {
+        this.hasDragged = true;
+        // Reset hasDragged after a short delay to allow click detection
+        setTimeout(() => {
+          this.hasDragged = false;
+        }, 100);
+        event.preventDefault();
+        event.stopPropagation();
+      } else {
+        // Not a drag, allow click to proceed
+        this.hasDragged = false;
+      }
+    }
+  }
+  
+  onAiAssistantClick(event: MouseEvent) {
+    // Only open popup if this wasn't a drag operation
+    // The hasDragged flag is set in onMouseUp if movement was detected
+    if (!this.hasDragged) {
+      this.showAiAssistant = true;
+    }
+  }
+
+  // Card dragging methods
+  startCardDrag(event: MouseEvent, cardType: 'customers' | 'applications' | 'businessWon' | 'winRate') {
+    this.draggingCard = cardType;
+    const card = event.currentTarget as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    this.cardDragOffset = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+    this.cardDragStartPosition = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onCardMouseMove(event: MouseEvent) {
+    if (this.draggingCard) {
+      const cardWidth = 256; // Fixed card width
+      const cardHeight = 160; // Fixed card height
+      const margin = 10;
+      
+      // Get the cards container element to calculate relative positions
+      const container = document.querySelector('.relative.mb-6');
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      
+      // Define the home page area boundaries within the container
+      // Cards area is the space from left edge of container to right edge
+      const cardsAreaLeft = 0; // Left edge of container
+      const cardsAreaRight = containerRect.width; // Right edge of container
+      const cardsAreaTop = 0; // Top of container
+      const cardsAreaBottom = containerRect.height; // Bottom of container (160px)
+      
+      // Calculate new position relative to the container
+      let newX = event.clientX - containerRect.left - this.cardDragOffset.x;
+      let newY = event.clientY - containerRect.top - this.cardDragOffset.y;
+      
+      // Constrain to home page area boundaries (within the container)
+      // Left boundary: at least margin from left edge
+      newX = Math.max(cardsAreaLeft + margin, newX);
+      // Right boundary: card should not go beyond container width
+      newX = Math.min(newX, cardsAreaRight - cardWidth - margin);
+      // Top boundary: at least margin from top
+      newY = Math.max(cardsAreaTop + margin, newY);
+      // Bottom boundary: card should stay within container height
+      newY = Math.min(newY, cardsAreaBottom - cardHeight - margin);
+      
+      // Update position for the dragged card
+      if (this.draggingCard) {
+        this.cardPositions[this.draggingCard] = { x: newX, y: newY };
+      }
+      
+      event.preventDefault();
+    }
+  }
+
+  onCardMouseUp(event: MouseEvent) {
+    if (this.draggingCard) {
+      this.draggingCard = null;
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
@@ -1200,8 +1549,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   viewCustomer(customer: Customer) {
-    this.selectedCustomer = customer;
-    // Don't open modal on row click - only on name click
+    // Navigate to customer details page instead of opening popup
+    if (customer.customerId) {
+      this.router.navigate(['/customers', customer.customerId]);
+    }
   }
 
   openCustomerDetails(customer: Customer, event: Event) {
@@ -1374,6 +1725,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.currentCallId = response.callId || null;
           this.callStatus = 'initiated';
           this.callDuration = 0;
+          this.callStartTime = new Date();
           this.showCallStatus = true;
           
           console.log('Call initiated, callId:', this.currentCallId);
@@ -1551,13 +1903,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.callStatusSubscription = null;
           console.log('Stopped polling - call disconnected');
         }
-        // Auto-close after 3 seconds
+        // Navigate to Call Summary after a brief delay
         setTimeout(() => {
           if (this.showCallStatus && this.callStatus === 'disconnected') {
-            console.log('Auto-closing call status popup - call disconnected');
-            this.closeCallStatus();
+            console.log('Showing call summary after disconnect');
+            this.showCallSummaryScreen();
           }
-        }, 3000);
+        }, 1000);
         break;
       case 'failed':
         newStatus = 'failed';
@@ -1569,13 +1921,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.callStatusSubscription = null;
           console.log('Stopped polling - call failed');
         }
-        // Auto-close after 3 seconds
+        // Navigate to Call Summary after a brief delay even for failed calls
         setTimeout(() => {
           if (this.showCallStatus && this.callStatus === 'failed') {
-            console.log('Auto-closing call status popup - call failed');
-            this.closeCallStatus();
+            console.log('Showing call summary after failure');
+            this.showCallSummaryScreen();
           }
-        }, 3000);
+        }, 1000);
         break;
       default:
         if (backendStatus) {
@@ -1654,22 +2006,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (response) => {
         console.log('Call ended successfully:', response);
         // Status already set to disconnected above
-        // Auto-close after 3 seconds
-        setTimeout(() => {
-          if (this.showCallStatus) {
-            this.closeCallStatus();
-          }
-        }, 3000);
+        // Navigate to Call Summary page
+        this.showCallSummaryScreen();
       },
       error: (error) => {
         console.error('Error ending call:', error);
         // Keep status as disconnected since user clicked end call
-        // Auto-close after 3 seconds anyway
-        setTimeout(() => {
-          if (this.showCallStatus) {
-            this.closeCallStatus();
-          }
-        }, 3000);
+        // Navigate to Call Summary page anyway
+        this.showCallSummaryScreen();
       }
     });
   }
@@ -1681,6 +2025,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.currentCallPhone = null;
     this.currentCallId = null;
     this.callDuration = 0;
+    this.callStartTime = null;
+    this.audioMuted = false;
     this.stopCallTimer();
     
     // Stop polling for status updates
@@ -1688,6 +2034,61 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.callStatusSubscription.unsubscribe();
       this.callStatusSubscription = null;
     }
+  }
+
+  showCallSummaryScreen() {
+    // Close call status popup
+    this.showCallStatus = false;
+    
+    // Store call summary data in service
+    if (this.currentCallCustomer) {
+      this.callSummaryService.setCallSummaryData({
+        customer: this.currentCallCustomer,
+        phoneNumber: this.currentCallPhone,
+        callId: this.currentCallId,
+        callDuration: this.callDuration,
+        callStartTime: this.callStartTime
+      });
+      
+      // Navigate to call summary page
+      const customerId = this.currentCallCustomer.customerId;
+      if (customerId) {
+        this.router.navigate(['/customers', customerId, 'call-summary']);
+      } else {
+        console.error('No customer ID available for navigation');
+        this.closeCallStatus();
+      }
+    } else {
+      console.error('No customer data available for call summary');
+      this.closeCallStatus();
+    }
+  }
+
+  toggleAudio() {
+    this.audioMuted = !this.audioMuted;
+    // TODO: Implement actual audio mute/unmute functionality with ACS
+  }
+
+  getInitials(customer: Customer): string {
+    if (customer.fullName) {
+      const names = customer.fullName.trim().split(' ');
+      if (names.length >= 2) {
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+      }
+      return names[0][0].toUpperCase();
+    }
+    const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
+    if (firstName && lastName) {
+      return (firstName[0] + lastName[0]).toUpperCase();
+    }
+    if (firstName) {
+      return firstName[0].toUpperCase();
+    }
+    if (lastName) {
+      return lastName[0].toUpperCase();
+    }
+    return '?';
   }
 
   isOkToCall(customer: Customer): boolean {
@@ -1733,14 +2134,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.callingPhoneModal = null;
         if (response.status === 'initiated' || response.status === 'success') {
-          this.callMessageModal = {
-            severity: 'success',
-            message: `Call initiated to ${phoneNumber}`
-          };
-          // Clear message after 3 seconds
-          setTimeout(() => {
-            this.callMessageModal = null;
-          }, 3000);
+          // Show call status popup (same as makePhoneCall)
+          this.currentCallCustomer = customer;
+          this.currentCallPhone = phoneNumber;
+          this.currentCallId = response.callId || null;
+          this.callStatus = 'initiated';
+          this.callDuration = 0;
+          this.callStartTime = new Date();
+          this.showCallStatus = true;
+          
+          console.log('Call initiated from modal, callId:', this.currentCallId);
+          
+          // Start polling for call status updates from ACS events
+          if (this.currentCallId) {
+            this.startCallStatusPolling(this.currentCallId);
+          } else {
+            console.warn('No callId returned from backend - cannot poll for status');
+            // If no callId, simulate progression
+            this.simulateCallProgression();
+          }
         } else {
           this.callMessageModal = {
             severity: 'error',
