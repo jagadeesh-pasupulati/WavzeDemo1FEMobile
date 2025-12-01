@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -838,6 +838,13 @@ import { CallSummaryService } from '../../services/call-summary.service';
         </div>
       </div>
     </p-dialog>
+
+    <!-- Background Audio for Call Status Popup -->
+    <audio #backgroundAudio
+           src="/assets/audio/MortgageCall.mp3"
+           loop
+           style="display: none;">
+    </audio>
   `,
   styles: [`
     /* Custom scrollbar styling for products */
@@ -891,7 +898,7 @@ import { CallSummaryService } from '../../services/call-summary.service';
     }
   `]
 })
-export class CustomerDetailsComponent implements OnInit, OnDestroy {
+export class CustomerDetailsComponent implements OnInit, OnDestroy, AfterViewInit {
   customer: Customer = {};
   productTab: 'interested' | 'owned' = 'interested';
   interestedProductsTab: 'current' | 'past' = 'current';
@@ -912,6 +919,10 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
   callStatusSubscription: Subscription | null = null;
   callStartTime: Date | null = null;
   audioMuted = false;
+  
+  // Background audio for call status popup
+  @ViewChild('backgroundAudio', { static: false }) backgroundAudioRef!: ElementRef<HTMLAudioElement>;
+  backgroundAudioElement: HTMLAudioElement | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -922,11 +933,24 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnDestroy() {
+    // Stop background audio on component destroy
+    this.stopBackgroundAudio();
     // Clean up subscriptions and intervals
     if (this.callStatusSubscription) {
       this.callStatusSubscription.unsubscribe();
     }
     this.stopCallTimer();
+  }
+
+  ngAfterViewInit() {
+    // Initialize background audio element reference
+    setTimeout(() => {
+      if (this.backgroundAudioRef && this.backgroundAudioRef.nativeElement) {
+        this.backgroundAudioElement = this.backgroundAudioRef.nativeElement;
+        // Set default volume (50%)
+        this.backgroundAudioElement.volume = 0.5;
+      }
+    }, 0);
   }
 
   ngOnInit() {
@@ -1129,6 +1153,7 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
       if (this.callStatus === 'connecting' && this.showCallStatus) {
         this.callStatus = 'connected';
         this.startCallTimer();
+        this.startBackgroundAudio(); // Start background audio when connected
       }
     }, 7000);
   }
@@ -1150,6 +1175,7 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
         console.log('Fallback progression: Moving to connected state');
         this.callStatus = 'connected';
         this.startCallTimer();
+        this.startBackgroundAudio(); // Start background audio when connected
       }
     }, 11000);
   }
@@ -1197,9 +1223,10 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
         newStatus = 'connected';
         statusChanged = true;
         if (previousStatus !== 'connected') {
-          // Just connected - start the timer
+          // Just connected - start the timer and background audio
           console.log('Call connected - starting timer');
           this.startCallTimer();
+          this.startBackgroundAudio(); // Start background audio when connected
         }
         // Update duration from backend
         if (status.duration !== undefined && status.duration !== null) {
@@ -1210,6 +1237,7 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
         newStatus = 'disconnected';
         statusChanged = true;
         this.stopCallTimer();
+        this.stopBackgroundAudio(); // Stop background audio when disconnected
         // Update duration from backend
         if (status.duration !== undefined && status.duration !== null) {
           this.callDuration = Math.max(0, status.duration);
@@ -1227,6 +1255,7 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
         newStatus = 'failed';
         statusChanged = true;
         this.stopCallTimer();
+        this.stopBackgroundAudio(); // Stop background audio when failed
         // Show Call Summary after a brief delay even for failed calls
         setTimeout(() => {
           if (this.showCallStatus && this.callStatus === 'failed') {
@@ -1300,6 +1329,9 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
     // Stop timer
     this.stopCallTimer();
     
+    // Stop background audio
+    this.stopBackgroundAudio();
+    
     // Update UI to show disconnected state immediately
     const previousStatus = this.callStatus;
     this.callStatus = 'disconnected';
@@ -1345,10 +1377,65 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy {
     this.audioMuted = false;
     this.stopCallTimer();
     
+    // Stop background audio
+    this.stopBackgroundAudio();
+    
     // Stop polling for status updates
     if (this.callStatusSubscription) {
       this.callStatusSubscription.unsubscribe();
       this.callStatusSubscription = null;
+    }
+  }
+
+  startBackgroundAudio() {
+    if (this.backgroundAudioElement) {
+      try {
+        // Set volume if not already set
+        if (this.backgroundAudioElement.volume === 1) {
+          this.backgroundAudioElement.volume = 0.5; // 50% volume
+        }
+        // Play the background audio
+        const playPromise = this.backgroundAudioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.warn('Error playing background audio:', error);
+            // Auto-play was prevented or audio failed to load
+          });
+        }
+      } catch (error) {
+        console.warn('Error starting background audio:', error);
+      }
+    } else {
+      // Try to get the element reference if not already set
+      if (this.backgroundAudioRef && this.backgroundAudioRef.nativeElement) {
+        this.backgroundAudioElement = this.backgroundAudioRef.nativeElement;
+        this.backgroundAudioElement.volume = 0.5;
+        const playPromise = this.backgroundAudioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.warn('Error playing background audio:', error);
+          });
+        }
+      }
+    }
+  }
+
+  stopBackgroundAudio() {
+    if (this.backgroundAudioElement) {
+      try {
+        this.backgroundAudioElement.pause();
+        this.backgroundAudioElement.currentTime = 0; // Reset to beginning
+      } catch (error) {
+        console.warn('Error stopping background audio:', error);
+      }
+    } else if (this.backgroundAudioRef && this.backgroundAudioRef.nativeElement) {
+      try {
+        this.backgroundAudioElement = this.backgroundAudioRef.nativeElement;
+        this.backgroundAudioElement.pause();
+        this.backgroundAudioElement.currentTime = 0;
+      } catch (error) {
+        console.warn('Error stopping background audio:', error);
+      }
     }
   }
   
