@@ -873,6 +873,20 @@ import { CallSummaryService } from '../../services/call-summary.service';
              style="display: none;">
       </audio>
 
+      <!-- Voice Recognition Button - Draggable -->
+      <button 
+              [style.position]="'fixed'"
+              [style.left.px]="voiceRecognitionPosition.x"
+              [style.top.px]="voiceRecognitionPosition.y"
+              [style.bottom]="'auto'"
+              [style.right]="'auto'"
+              (mousedown)="startDragVoiceRecognition($event)"
+              (click)="onVoiceRecognitionClick($event)"
+              class="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50 cursor-move"
+              [class.dragging]="isDraggingVoiceRecognition">
+        <i class="pi pi-microphone text-lg"></i>
+      </button>
+
       <!-- AI Assistant Button - Draggable -->
       <button 
               [style.position]="'fixed'"
@@ -1059,6 +1073,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   hasDragged = false;
   dragStartPosition = { x: 0, y: 0 };
   
+  // Voice Recognition icon properties
+  voiceRecognitionPosition = { x: 0, y: 0 };
+  isDraggingVoiceRecognition = false;
+  voiceRecognitionDragOffset = { x: 0, y: 0 };
+  voiceRecognitionHasDragged = false;
+  voiceRecognitionDragStartPosition = { x: 0, y: 0 };
+  
   // Card dragging properties
   draggingCard: 'customers' | 'applications' | 'businessWon' | 'winRate' | null = null;
   cardDragOffset = { x: 0, y: 0 };
@@ -1114,6 +1135,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loadDashboardData();
     // Initialize AI Assistant button position to bottom right corner
     this.initializeAiAssistantPosition();
+    // Initialize Voice Recognition button position next to AI Assistant
+    this.initializeVoiceRecognitionPosition();
     
     // Initialize card positions in a grid layout
     this.initializeCardPositions();
@@ -1213,6 +1236,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     }, 0);
   }
   
+  initializeVoiceRecognitionPosition() {
+    // Initialize Voice Recognition button position next to AI Assistant (to the left)
+    setTimeout(() => {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const buttonSize = 48; // 12 * 4px = 48px (w-12 h-12)
+      const margin = 24; // Margin from edges
+      const gap = 12; // Gap between AI Assistant and Voice Recognition icons
+      
+      this.voiceRecognitionPosition = {
+        x: windowWidth - 72 - buttonSize - gap, // To the left of AI Assistant
+        y: windowHeight - 72 // Same vertical position as AI Assistant
+      };
+    }, 0);
+  }
+  
   startDrag(event: MouseEvent) {
     this.isDragging = true;
     this.hasDragged = false;
@@ -1228,6 +1267,34 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     };
     event.preventDefault();
     event.stopPropagation();
+  }
+  
+  startDragVoiceRecognition(event: MouseEvent) {
+    this.isDraggingVoiceRecognition = true;
+    this.voiceRecognitionHasDragged = false;
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    this.voiceRecognitionDragOffset = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+    this.voiceRecognitionDragStartPosition = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  onVoiceRecognitionClick(event: MouseEvent) {
+    // Prevent click if it was a drag
+    if (this.voiceRecognitionHasDragged) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    // TODO: Implement voice recognition functionality
+    console.log('Voice Recognition clicked');
   }
   
   onMouseMove(event: MouseEvent) {
@@ -1257,6 +1324,32 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       
       this.aiAssistantPosition = { x: newX, y: newY };
       event.preventDefault();
+    } else if (this.isDraggingVoiceRecognition) {
+      // Handle voice recognition icon dragging
+      const moveDistance = Math.sqrt(
+        Math.pow(event.clientX - this.voiceRecognitionDragStartPosition.x, 2) + 
+        Math.pow(event.clientY - this.voiceRecognitionDragStartPosition.y, 2)
+      );
+      
+      if (moveDistance > 5) {
+        this.voiceRecognitionHasDragged = true;
+      }
+      
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const buttonSize = 48; // 12 * 4px = 48px (w-12 h-12)
+      const margin = 6; // Margin from edges
+      
+      // Calculate new position (subtract drag offset to keep cursor position relative to button)
+      let newX = event.clientX - this.voiceRecognitionDragOffset.x;
+      let newY = event.clientY - this.voiceRecognitionDragOffset.y;
+      
+      // Constrain to screen boundaries
+      newX = Math.max(margin, Math.min(newX, windowWidth - buttonSize - margin));
+      newY = Math.max(margin, Math.min(newY, windowHeight - buttonSize - margin));
+      
+      this.voiceRecognitionPosition = { x: newX, y: newY };
+      event.preventDefault();
     }
   }
   
@@ -1285,6 +1378,31 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
         // Not a drag, allow click to proceed
         this.hasDragged = false;
+      }
+    } else if (this.isDraggingVoiceRecognition) {
+      // Handle voice recognition icon mouse up
+      const moveDistance = Math.sqrt(
+        Math.pow(event.clientX - this.voiceRecognitionDragStartPosition.x, 2) + 
+        Math.pow(event.clientY - this.voiceRecognitionDragStartPosition.y, 2)
+      );
+      
+      const wasActuallyDragged = moveDistance > 5;
+      
+      // Reset dragging state
+      this.isDraggingVoiceRecognition = false;
+      
+      // If it was actually dragged, prevent the click event
+      if (wasActuallyDragged) {
+        this.voiceRecognitionHasDragged = true;
+        // Reset hasDragged after a short delay to allow click detection
+        setTimeout(() => {
+          this.voiceRecognitionHasDragged = false;
+        }, 100);
+        event.preventDefault();
+        event.stopPropagation();
+      } else {
+        // Not a drag, allow click to proceed
+        this.voiceRecognitionHasDragged = false;
       }
     }
   }
