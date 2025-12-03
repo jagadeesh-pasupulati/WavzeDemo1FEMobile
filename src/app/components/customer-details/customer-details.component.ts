@@ -92,6 +92,22 @@ import { CallSummaryService } from '../../services/call-summary.service';
                         class="px-6 py-3 text-sm font-medium transition-colors">
                   Owned Products
                 </button>
+                <button (click)="productTab = 'residences'"
+                        [class.border-b-2]="productTab === 'residences'"
+                        [class.border-blue-600]="productTab === 'residences'"
+                        [class.text-blue-600]="productTab === 'residences'"
+                        [class.text-gray-600]="productTab !== 'residences'"
+                        class="px-6 py-3 text-sm font-medium transition-colors">
+                  Residences
+                </button>
+                <button (click)="productTab = 'allDetails'"
+                        [class.border-b-2]="productTab === 'allDetails'"
+                        [class.border-blue-600]="productTab === 'allDetails'"
+                        [class.text-blue-600]="productTab === 'allDetails'"
+                        [class.text-gray-600]="productTab !== 'allDetails'"
+                        class="px-6 py-3 text-sm font-medium transition-colors">
+                  All Details
+                </button>
               </div>
             </div>
 
@@ -125,7 +141,8 @@ import { CallSummaryService } from '../../services/call-summary.service';
                 <div *ngIf="interestedProductsTab === 'current'" class="flex-1 overflow-y-auto product-scrollbar min-h-0">
                   <div class="space-y-3 pr-2">
                     <!-- Mortgage Product -->
-                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                         (click)="openProductDetails('Mortgage (30y Fixed Rate)', 'Website', '8/15/2025')">
                       <div class="flex items-start justify-between">
                         <div class="flex items-start gap-4 flex-1">
                           <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -141,7 +158,7 @@ import { CallSummaryService } from '../../services/call-summary.service';
                             <p class="text-xs text-gray-600">Co-applicant: Jane Smith (406) 555-0120</p>
                           </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2" (click)="$event.stopPropagation()">
                           <button class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1">
                             <i class="pi pi-phone text-xs"></i>
                             Call
@@ -336,17 +353,221 @@ import { CallSummaryService } from '../../services/call-summary.service';
                   </div>
                 </div>
               </div>
+
+              <!-- Residences Tab -->
+              <div *ngIf="productTab === 'residences'" class="flex flex-col flex-1 min-h-0">
+                <div class="flex-1 overflow-y-auto product-scrollbar min-h-0">
+                  <div class="space-y-6 pr-2">
+                    <!-- Primary Residence -->
+                    <div class="border-b border-gray-200 pb-6">
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-home text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">Primary Residence</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Property Type</p>
+                          <p class="text-sm text-gray-900">Townhouse</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Occupancy</p>
+                          <p class="text-sm text-gray-900">Primary Residence</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Address</p>
+                          <p class="text-sm text-gray-900">2972 Westheimer Rd.<br>Santa Ana, Illinois 85486</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Purchase Date</p>
+                          <p class="text-sm text-gray-900">8/15/05</p>
+                        </div>
+                        <div class="col-span-2">
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Estimated Property value</p>
+                          <p class="text-sm text-gray-900">$1,230,000</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Second Home -->
+                    <div class="border-b border-gray-200 pb-6">
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-home text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">Second Home</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Property Type</p>
+                          <p class="text-sm text-gray-900">Townhouse</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Occupancy</p>
+                          <p class="text-sm text-gray-900">Second Home</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Address</p>
+                          <p class="text-sm text-gray-900">2972 Westheimer Rd.<br>Santa Ana, Illinois 85486</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Purchase Date</p>
+                          <p class="text-sm text-gray-900">8/15/05</p>
+                        </div>
+                        <div class="col-span-2">
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Estimated Property value</p>
+                          <p class="text-sm text-gray-900">$1,230,000</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Investment Property -->
+                    <div>
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-home text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">Investment Property</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Property Type</p>
+                          <p class="text-sm text-gray-900">Townhouse</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Occupancy</p>
+                          <p class="text-sm text-gray-900">Investment Property</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Address</p>
+                          <p class="text-sm text-gray-900">2972 Westheimer Rd.<br>Santa Ana, Illinois 85486</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Purchase Date</p>
+                          <p class="text-sm text-gray-900">8/15/05</p>
+                        </div>
+                        <div class="col-span-2">
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Estimated Property value</p>
+                          <p class="text-sm text-gray-900">$1,230,000</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- All Details Tab -->
+              <div *ngIf="productTab === 'allDetails'" class="flex flex-col flex-1 min-h-0">
+                <div class="flex-1 overflow-y-auto product-scrollbar min-h-0">
+                  <div class="space-y-6 pr-2">
+                    <!-- General Information Section -->
+                    <div class="border-b border-gray-200 pb-6">
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-user text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">General Information</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Name</p>
+                          <p class="text-sm text-gray-900">{{ customer.fullName || (customer.firstName + ' ' + (customer.lastName || '')) }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Call window</p>
+                          <p class="text-sm text-gray-900">10:00am - 2:00pm</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Email</p>
+                          <p class="text-sm text-gray-900">{{ customer.email || 'N/A' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Attempts</p>
+                          <p class="text-sm text-gray-900">3/5</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Phone</p>
+                          <p class="text-sm text-gray-900">{{ customer.phone || formatPhone(customer.phn1Nbr) || 'N/A' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Contact</p>
+                          <p class="text-sm text-gray-900">{{ customer.methodPref || 'Phone' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Primary Address</p>
+                          <p class="text-sm text-gray-900">2972 Westheimer Rd.<br>Santa Ana, Illinois 85486</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Spoken Lang.</p>
+                          <p class="text-sm text-gray-900 flex items-center gap-1">
+                            <span class="inline-block w-4 h-3">🇺🇸</span>
+                            English
+                          </p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Time Zone</p>
+                          <p class="text-sm text-gray-900">{{ customer.timeZone || 'EST' }}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Employment Section -->
+                    <div class="border-b border-gray-200 pb-6">
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-briefcase text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">Employment</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Current Employer</p>
+                          <p class="text-sm text-gray-900">Pulihora Inc.</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Job Title</p>
+                          <p class="text-sm text-gray-900">Product Designer</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Annual income</p>
+                          <p class="text-sm text-gray-900">$ 235000</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Relationship Section -->
+                    <div>
+                      <div class="flex items-center gap-2 mb-4">
+                        <i class="pi pi-users text-gray-700"></i>
+                        <h3 class="font-semibold text-gray-900">Relationship</h3>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Contact Source</p>
+                          <p class="text-sm text-gray-900">Web</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Owner ID</p>
+                          <p class="text-sm text-gray-900">Marilyn Stevensson</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Last Contact Date</p>
+                          <p class="text-sm text-gray-900">11/23/2025</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">Created</p>
+                          <p class="text-sm text-gray-900">{{ formatDate(customer.createTs) || '8/15/25' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700 mb-1">First Contact Date</p>
+                          <p class="text-sm text-gray-900">10/17/2025</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Right Sidebar with Activity and All Details side by side -->
-        <div class="col-span-2 col-start-4 grid grid-cols-2 gap-6 min-h-0">
+        <!-- Right Sidebar with Activity (Full Width) -->
+        <div class="col-span-2 col-start-4 flex flex-col min-h-0">
           <!-- Activity Panel -->
-          <div class="flex flex-col min-h-0">
-            <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col flex-1 min-h-0">
-              <h2 class="text-lg font-semibold text-gray-900 mb-4 flex-shrink-0">Activity</h2>
-              <div class="flex-1 overflow-y-auto activity-scrollbar min-h-0">
+          <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col flex-1 min-h-0">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex-shrink-0">Activity</h2>
+            <div class="flex-1 overflow-y-auto activity-scrollbar min-h-0">
               <div class="space-y-6 pr-2">
                 <div>
                   <p class="text-sm font-semibold text-gray-700 mb-3">Yesterday</p>
@@ -439,52 +660,6 @@ import { CallSummaryService } from '../../services/call-summary.service';
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
-
-          <!-- All Details Panel -->
-          <div class="flex flex-col min-h-0">
-            <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col flex-1 min-h-0">
-              <h2 class="text-lg font-semibold text-gray-900 mb-4 flex-shrink-0">All details</h2>
-              <div class="space-y-4 flex-1 overflow-y-auto overflow-x-hidden activity-scrollbar min-h-0 pr-2">
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Name</p>
-                  <p class="text-sm text-gray-900 break-words">{{ customer.fullName || (customer.firstName + ' ' + (customer.lastName || '')) }}</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Email</p>
-                  <p class="text-sm text-gray-900 break-words">{{ customer.email || 'N/A' }}</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Phone</p>
-                  <p class="text-sm text-gray-900 break-words">{{ customer.phone || formatPhone(customer.phn1Nbr) || 'N/A' }}</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Address</p>
-                  <p class="text-sm text-gray-900 break-words">2972 Westheimer Rd. Santa Ana, Illinois 85486</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Time Zone</p>
-                  <p class="text-sm text-gray-900 break-words">{{ customer.timeZone || 'EST' }}</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Call window</p>
-                  <p class="text-sm text-gray-900 break-words">10:00am - 2:00pm</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Attempts</p>
-                  <p class="text-sm text-gray-900 break-words">3/5</p>
-                </div>
-                <div class="border-b border-gray-200 pb-2">
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Contact</p>
-                  <p class="text-sm text-gray-900 break-words">{{ customer.methodPref || 'Phone' }}</p>
-                </div>
-                <div>
-                  <p class="text-xs font-semibold text-gray-700 mb-1" style="font-size: 12px; font-weight: 600;">Created</p>
-                  <p class="text-sm text-gray-900 break-words">{{ formatDate(customer.createTs) || 'N/A' }}</p>
                 </div>
               </div>
             </div>
@@ -845,6 +1020,128 @@ import { CallSummaryService } from '../../services/call-summary.service';
            loop
            style="display: none;">
     </audio>
+
+    <!-- Product Details Modal -->
+    <p-dialog [(visible)]="showProductDetails" 
+              [modal]="true" 
+              [closable]="true"
+              [draggable]="false"
+              [resizable]="false"
+              [style]="{width: '900px'}"
+              styleClass="product-details-dialog">
+      <ng-template pTemplate="header">
+        <div class="flex items-center justify-between w-full" style="padding: 0 24px;">
+          <div>
+            <div style="font-size: 20px; font-weight: 600; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ selectedProductName }}</div>
+          </div>
+        </div>
+      </ng-template>
+
+      <div style="padding: 0 24px;">
+        <!-- Customer Info -->
+        <div class="flex items-center gap-2 pb-4 border-b border-gray-200">
+          <i class="pi pi-user" style="font-size: 14px; color: #6B7280;"></i>
+          <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ customer.fullName || (customer.firstName + ' ' + (customer.lastName || '')) }}</span>
+          <span style="color: #D1D5DB;">•</span>
+          <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ selectedProductSource }}</span>
+          <span style="color: #D1D5DB;">•</span>
+          <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Created: {{ selectedProductCreated }}</span>
+        </div>
+
+        <!-- Product Details Section -->
+        <div class="mt-6">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="pi pi-box" style="font-size: 16px; color: #374151;"></i>
+            <h3 style="font-size: 16px; font-weight: 600; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Product Details</h3>
+          </div>
+          <div class="grid grid-cols-2 gap-x-12">
+            <!-- Left Column -->
+            <div class="space-y-0">
+              <!-- Loan Amount -->
+              <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Loan Amount</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">$450,542.42</span>
+              </div>
+              <!-- Interest Rate -->
+              <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Interest Rate</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">%2.9</span>
+              </div>
+              <!-- Term Details -->
+              <div class="flex justify-between items-center py-3">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Term Details</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">---------------</span>
+              </div>
+            </div>
+            <!-- Right Column -->
+            <div class="space-y-0">
+              <!-- Purchase Price -->
+              <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Purchase Price</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">$650,343.42</span>
+              </div>
+              <!-- Downpayment -->
+              <div class="flex justify-between items-center py-3">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Downpayment</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">$100,000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Property Section -->
+        <div class="mt-8">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="pi pi-home" style="font-size: 16px; color: #374151;"></i>
+            <h3 style="font-size: 16px; font-weight: 600; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Property</h3>
+          </div>
+          <div class="grid grid-cols-2 gap-x-12">
+            <!-- Left Column -->
+            <div class="space-y-0">
+              <!-- Property Type -->
+              <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Property Type</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Townhouse</span>
+              </div>
+              <!-- Address -->
+              <div class="flex justify-between items-start py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Address</span>
+                <span style="font-size: 14px; color: #6B7280; text-align: right; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">2972 Westheimer Rd.<br>Santa Ana, Illinois 85486</span>
+              </div>
+              <!-- Estimated Property value -->
+              <div class="flex justify-between items-center py-3">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Estimated Property value</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">$1,230,000</span>
+              </div>
+            </div>
+            <!-- Right Column -->
+            <div class="space-y-0">
+              <!-- Occupancy -->
+              <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Occupancy</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Primary Residence</span>
+              </div>
+              <!-- Purchase Date -->
+              <div class="flex justify-between items-center py-3">
+                <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Purchase Date</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">8/15/05</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <div class="flex justify-end" style="padding: 0 24px;">
+          <button (click)="showProductDetails = false" 
+                  class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  style="font-size: 14px; font-weight: 500; color: #374151; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            Close
+            <span class="ml-2" style="font-size: 12px; color: #9CA3AF;">Esc</span>
+          </button>
+        </div>
+      </ng-template>
+    </p-dialog>
   `,
   styles: [`
     /* Custom scrollbar styling for products */
@@ -900,13 +1197,19 @@ import { CallSummaryService } from '../../services/call-summary.service';
 })
 export class CustomerDetailsComponent implements OnInit, OnDestroy, AfterViewInit {
   customer: Customer = {};
-  productTab: 'interested' | 'owned' = 'interested';
+  productTab: 'interested' | 'owned' | 'residences' | 'allDetails' = 'interested';
   interestedProductsTab: 'current' | 'past' = 'current';
   showLogContactResult = false;
   contactOccurred: 'outbound' | 'inbound' = 'outbound';
   contactMethod: ('phone' | 'text' | 'email')[] = [];
   callResult: 'spoke' | 'left-message' | 'no-message' | null = null;
   logContactComments = '';
+  
+  // Product Details Modal
+  showProductDetails = false;
+  selectedProductName = '';
+  selectedProductSource = '';
+  selectedProductCreated = '';
 
   // Call status popup
   showCallStatus = false;
@@ -1465,6 +1768,13 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy, AfterViewIni
       console.error('No customer data available for call summary');
       this.closeCallStatus();
     }
+  }
+
+  openProductDetails(productName: string, source: string, created: string) {
+    this.selectedProductName = productName;
+    this.selectedProductSource = source;
+    this.selectedProductCreated = created;
+    this.showProductDetails = true;
   }
   
 }
