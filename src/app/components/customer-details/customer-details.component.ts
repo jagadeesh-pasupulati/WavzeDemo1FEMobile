@@ -1065,7 +1065,7 @@ import { CallSummaryService } from '../../services/call-summary.service';
               <!-- Interest Rate -->
               <div class="flex justify-between items-center py-3 border-b border-gray-200">
                 <span style="font-size: 14px; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Interest Rate</span>
-                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">%2.9</span>
+                <span style="font-size: 14px; color: #6B7280; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">2.9%</span>
               </div>
               <!-- Term Details -->
               <div class="flex justify-between items-center py-3">
