@@ -98,7 +98,7 @@ import { CallSummaryService } from '../../services/call-summary.service';
                         [class.text-blue-600]="productTab === 'residences'"
                         [class.text-gray-600]="productTab !== 'residences'"
                         class="px-6 py-3 text-sm font-medium transition-colors">
-                  Residences
+                  Properties
                 </button>
                 <button (click)="productTab = 'allDetails'"
                         [class.border-b-2]="productTab === 'allDetails'"
@@ -354,7 +354,7 @@ import { CallSummaryService } from '../../services/call-summary.service';
                 </div>
               </div>
 
-              <!-- Residences Tab -->
+              <!-- Properties Tab -->
               <div *ngIf="productTab === 'residences'" class="flex flex-col flex-1 min-h-0">
                 <div class="flex-1 overflow-y-auto product-scrollbar min-h-0">
                   <div class="space-y-6 pr-2">
