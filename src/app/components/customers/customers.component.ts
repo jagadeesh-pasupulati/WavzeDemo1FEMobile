@@ -25,47 +25,104 @@ import { CustomerService, Customer } from '../../services/customer.service';
     MenuModule
   ],
   template: `
-    <div class="p-6">
+    <div class="p-4 lg:p-6 pb-20 lg:pb-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-semibold flex items-center gap-2 text-gray-900">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 lg:mb-6 gap-3">
+          <h1 class="text-xl lg:text-2xl font-semibold flex items-center gap-2 text-gray-900">
             <i class="pi pi-users text-gray-600"></i>
             Customers
           </h1>
           <button 
-                  class="bg-purple-600 hover:bg-purple-700 border-0 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors shadow-sm"
+                  class="bg-purple-600 hover:bg-purple-700 border-0 text-white px-4 py-3 rounded-md text-sm font-medium transition-colors shadow-sm w-full sm:w-auto touch-target"
                   (click)="showAddDialog = true">
+            <i class="pi pi-plus mr-2"></i>
             Add new customer
           </button>
         </div>
 
         <!-- Filters and Search -->
-        <div class="flex items-center gap-3 mb-4">
-          <button class="p-2 text-gray-600 hover:bg-gray-100 rounded">
-            <i class="pi pi-filter text-lg"></i>
-          </button>
-          <div class="flex gap-2 flex-wrap flex-1">
-            <span class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2 font-normal">
-              Stage: New Lead
-              <i class="pi pi-times text-xs cursor-pointer hover:text-gray-900" (click)="removeFilter('stage')"></i>
-            </span>
-            <span class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2 font-normal">
-              Contact window: 10:00-15:00
-              <i class="pi pi-times text-xs cursor-pointer hover:text-gray-900" (click)="removeFilter('window')"></i>
-            </span>
+        <div class="flex flex-col gap-3 mb-4">
+          <div class="flex items-center gap-3">
+            <button class="p-3 text-gray-600 hover:bg-gray-100 rounded-lg touch-target lg:p-2">
+              <i class="pi pi-filter text-lg"></i>
+            </button>
+            <div class="relative flex-1">
+              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <input type="text" 
+                     placeholder="Search customers..." 
+                     [(ngModel)]="searchQuery"
+                     (input)="filterCustomers()"
+                     class="pl-10 pr-4 py-3 lg:py-2 border border-gray-300 rounded-md text-base lg:text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
           </div>
-          <div class="relative">
-            <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" 
-                   placeholder="Search..." 
-                   [(ngModel)]="searchQuery"
-                   (input)="filterCustomers()"
-                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <div class="flex gap-2 flex-wrap">
+            <span class="bg-gray-200 text-gray-700 px-3 py-2 lg:py-1.5 rounded-full text-sm flex items-center gap-2 font-normal touch-target">
+              Stage: New Lead
+              <i class="pi pi-times text-xs cursor-pointer hover:text-gray-900 touch-target" (click)="removeFilter('stage')"></i>
+            </span>
+            <span class="bg-gray-200 text-gray-700 px-3 py-2 lg:py-1.5 rounded-full text-sm flex items-center gap-2 font-normal touch-target">
+              Contact window: 10:00-15:00
+              <i class="pi pi-times text-xs cursor-pointer hover:text-gray-900 touch-target" (click)="removeFilter('window')"></i>
+            </span>
           </div>
         </div>
 
-        <!-- Customers Table -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Mobile Customers Cards -->
+        <div class="lg:hidden space-y-3">
+          <div *ngFor="let customer of filteredCustomers" 
+               class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 active:bg-gray-50"
+               (click)="viewCustomer(customer)">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900 text-base">
+                  {{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">{{ customer.email || 'ccalvin@email.org' }}</p>
+              </div>
+              <button class="p-2 hover:bg-gray-100 rounded-lg touch-target" (click)="$event.stopPropagation()">
+                <i class="pi pi-ellipsis-v text-gray-600"></i>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p class="text-gray-500 text-xs mb-1">Phone</p>
+                <p class="text-gray-900">{{ customer.phone || formatPhone(customer.phn1Nbr) || '(307) 555-0133' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500 text-xs mb-1">Properties</p>
+                <p class="text-gray-900">{{ getHomeCount(customer) }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500 text-xs mb-1">Last attempt</p>
+                <p class="text-gray-900">{{ formatDate(customer.createTs) || '3/4/16' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500 text-xs mb-1">Last action</p>
+                <p class="text-gray-900">{{ getLastAction(customer) }}</p>
+              </div>
+            </div>
+            
+            <div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full" 
+                    [ngClass]="getStageClass(customer)">
+                <i class="pi pi-circle-fill" style="font-size: 0.5rem;"></i>
+                {{ customer.stage || 'New Lead' }}
+              </span>
+              <span class="text-xs text-gray-600 ml-auto">
+                <i class="pi pi-clock mr-1"></i>10:00-15:00
+              </span>
+            </div>
+          </div>
+          
+          <div *ngIf="filteredCustomers.length === 0" class="text-center py-12 text-gray-500">
+            <i class="pi pi-users text-4xl mb-3 block text-gray-300"></i>
+            <p>No customers found</p>
+          </div>
+        </div>
+
+        <!-- Desktop Customers Table -->
+        <div class="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div class="overflow-x-auto">
             <div class="relative max-h-[660px] overflow-y-auto customers-table-scrollbar">
               <table class="w-full text-sm">
@@ -411,6 +468,11 @@ export class CustomersComponent implements OnInit {
       default:
         return 'bg-gray-100 text-gray-700';
     }
+  }
+
+  getStageClass(customer: Customer): string {
+    // Returns CSS classes for stage badges (mobile version)
+    return this.getStageBadgeClass(customer);
   }
 
   getLastAction(customer: Customer): string {

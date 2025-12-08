@@ -19,21 +19,81 @@ import { CallSummaryService } from '../../services/call-summary.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, DialogModule, ButtonModule, InputTextModule, MessageModule, TagModule, MenuModule],
   template: `
-    <div class="p-6">
+    <div class="p-4 lg:p-6 pb-20 lg:pb-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 lg:mb-6 gap-3 lg:gap-0">
           <div class="flex items-center gap-2">
-            <i class="pi pi-sun text-yellow-500 text-xl"></i>
-            <h1 class="text-2xl font-semibold">Good morning! Welcome back, Jane.</h1>
+            <i class="pi pi-sun text-yellow-500 text-xl lg:text-2xl"></i>
+            <h1 class="text-lg lg:text-2xl font-semibold">Good morning, Jane!</h1>
           </div>
-          <div class="text-sm text-gray-600 flex items-center gap-1">
+          <div class="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
             <i class="pi pi-cloud text-gray-500"></i>
             <span>CRM Sync: 5min ago</span>
           </div>
         </div>
 
-        <!-- Stats Cards - Draggable (Constrained to Home Page Area) -->
-        <div class="relative mb-6" 
+        <!-- Stats Cards - Mobile: Stacked, Desktop: Draggable -->
+        <!-- Mobile Stats Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 lg:hidden">
+          <!-- Customers Card -->
+          <div class="bg-white rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <i class="pi pi-users text-green-500 text-2xl"></i>
+              <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">30d</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-1">Customers</p>
+            <p class="text-2xl font-bold">{{ stats.customers }}</p>
+            <p class="text-xs text-green-600 mt-2 flex items-center gap-1" *ngIf="stats.customerGrowth > 0">
+              <i class="pi pi-arrow-up text-xs"></i>
+              +{{ stats.customerGrowth | number:'1.1-1' }}%
+            </p>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="stats.customerGrowth === 0">-0.0%</p>
+          </div>
+          
+          <!-- Applications Card -->
+          <div class="bg-white rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <i class="pi pi-file text-blue-500 text-2xl"></i>
+              <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">30d</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-1">Applications</p>
+            <p class="text-2xl font-bold">{{ stats.applications }}</p>
+            <p class="text-xs text-gray-500 mt-2">-0.0%</p>
+          </div>
+          
+          <!-- Business won Card -->
+          <div class="bg-white rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <i class="pi pi-dollar text-green-500 text-2xl"></i>
+              <span></span>
+            </div>
+            <p class="text-sm text-gray-600 mb-1">Business won</p>
+            <p class="text-2xl font-bold">{{ stats.businessWon }}</p>
+            <p class="text-xs text-green-600 mt-2 flex items-center gap-1" *ngIf="stats.businessGrowth > 0">
+              <i class="pi pi-arrow-up text-xs"></i>
+              +{{ stats.businessGrowth | number:'1.1-1' }}%
+            </p>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="stats.businessGrowth === 0"></p>
+          </div>
+          
+          <!-- Win rate Card -->
+          <div class="bg-white rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <span></span>
+              <span></span>
+            </div>
+            <p class="text-sm text-gray-600 mb-1">Win rate</p>
+            <p class="text-2xl font-bold">{{ stats.winRate }}</p>
+            <p class="text-xs text-yellow-600 mt-2 flex items-center gap-1" *ngIf="stats.winRateChange < 0">
+              <i class="pi pi-arrow-down text-xs"></i>
+              {{ stats.winRateChange | number:'1.1-1' }}%
+            </p>
+            <p class="text-xs text-gray-500 mt-2" *ngIf="stats.winRateChange >= 0"></p>
+          </div>
+        </div>
+
+        <!-- Desktop Stats Cards - Draggable -->
+        <div class="hidden lg:block relative mb-6" 
              style="height: 160px;"
              #cardsContainer>
           <!-- Customers Card -->
@@ -116,8 +176,72 @@ import { CallSummaryService } from '../../services/call-summary.service';
         <!-- Today's Customers Section -->
         <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
           <!-- Title and Toggle Buttons -->
-          <div class="border-b border-gray-200 px-4 pt-4 pb-0">
-            <div class="flex items-center justify-between mb-0">
+          <div class="border-b border-gray-200 px-3 lg:px-4 pt-3 lg:pt-4 pb-0">
+            <!-- Mobile: Stacked Layout -->
+            <div class="lg:hidden">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-semibold text-gray-900">Today's Customers</h2>
+              </div>
+              <div class="flex gap-2 mb-3">
+                <button class="flex-1 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1.5 touch-target" 
+                        [class.bg-blue-50]="viewMode === 'todo'"
+                        [class.text-blue-900]="viewMode === 'todo'"
+                        [class.border-blue-900]="viewMode === 'todo'"
+                        [class.text-gray-600]="viewMode !== 'todo'"
+                        [class.border-transparent]="viewMode !== 'todo'"
+                        (click)="viewMode = 'todo'; applyFilters()">
+                  <i class="pi pi-list text-xs" [class.text-blue-900]="viewMode === 'todo'" [class.text-gray-500]="viewMode !== 'todo'"></i>
+                  To do ({{ getTodoCount() }})
+                </button>
+                <button class="flex-1 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1.5 touch-target"
+                        [class.bg-blue-50]="viewMode === 'done'"
+                        [class.text-blue-900]="viewMode === 'done'"
+                        [class.border-blue-900]="viewMode === 'done'"
+                        [class.text-gray-600]="viewMode !== 'done'"
+                        [class.border-transparent]="viewMode !== 'done'"
+                        (click)="viewMode = 'done'; applyFilters()">
+                  <i class="pi pi-check text-xs" [class.text-blue-900]="viewMode === 'done'" [class.text-gray-500]="viewMode !== 'done'"></i>
+                  Done ({{ getDoneCount() }})
+                </button>
+              </div>
+              <div class="flex flex-col gap-3 mb-3">
+                <div class="relative flex items-center bg-white border border-gray-200 rounded-md px-3 py-2.5">
+                  <input type="text" 
+                         [(ngModel)]="searchQuery"
+                         (input)="applyFilters()"
+                         placeholder="Search customers..."
+                         class="flex-1 text-base text-gray-900 placeholder-gray-400 bg-transparent border-0 outline-none focus:ring-0">
+                  <i class="pi pi-search text-gray-400 text-sm ml-2"></i>
+                </div>
+                <div class="flex gap-3">
+                  <label class="flex items-center gap-2 cursor-pointer flex-1">
+                    <div class="relative inline-block w-11 h-6">
+                      <input type="checkbox" 
+                             [(ngModel)]="okToCall" 
+                             (change)="applyFilters()" 
+                             class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+                      <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                    </div>
+                    <span class="text-sm text-gray-600">OK to call</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer flex-1">
+                    <div class="relative inline-block w-11 h-6">
+                      <input type="checkbox" 
+                             [(ngModel)]="timeSensitive" 
+                             (change)="applyFilters()" 
+                             class="sr-only peer">
+                      <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+                      <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                    </div>
+                    <span class="text-sm text-gray-600">Time sensitive</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Desktop: Horizontal Layout -->
+            <div class="hidden lg:flex items-center justify-between mb-0">
               <div class="flex items-center gap-3">
                 <h2 class="text-sm font-semibold text-gray-900" style="font-size: 14px; font-weight: 600;">Today's Customers</h2>
                 <div class="flex">
@@ -191,8 +315,75 @@ import { CallSummaryService } from '../../services/call-summary.service';
             <p-message [severity]="callMessage.severity" [text]="callMessage.message"></p-message>
           </div>
 
-          <!-- Table -->
-          <div class="overflow-x-auto">
+          <!-- Mobile Card View -->
+          <div class="lg:hidden px-3 py-3">
+            <div class="space-y-3 max-h-[500px] overflow-y-auto">
+              <div *ngFor="let customer of filteredTodayCustomers" 
+                   (click)="viewCustomer(customer)"
+                   class="bg-white border border-gray-200 rounded-lg p-4 active:bg-blue-50 transition-colors">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                      <div *ngIf="customer.phone || customer.phn1Nbr" class="relative inline-flex items-center justify-center w-5 h-5">
+                        <ng-container *ngIf="getContactMethod(customer) === 'Phone'">
+                          <i class="pi pi-phone text-xs text-green-400"></i>
+                          <i class="pi pi-check text-[9px] absolute -top-0.5 right-0 text-green-400"></i>
+                        </ng-container>
+                        <ng-container *ngIf="getContactMethod(customer) === 'Email'">
+                          <i class="pi pi-phone text-xs text-pink-500"></i>
+                          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 12 12">
+                            <line x1="0.5" y1="0.5" x2="11.5" y2="11.5" stroke="#ec4899" stroke-width="2" stroke-linecap="round"/>
+                          </svg>
+                        </ng-container>
+                      </div>
+                      <h3 class="font-semibold text-gray-900">{{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}</h3>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ customer.phone || formatPhone(customer.phn1Nbr) || 'No phone' }}</p>
+                  </div>
+                  <button *ngIf="viewMode === 'todo' && (customer.phone || customer.phn1Nbr)"
+                          (click)="makePhoneCall(customer, $event)"
+                          class="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 flex items-center gap-2 touch-target">
+                    <i class="pi pi-phone text-xs"></i>
+                    Call
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p class="text-gray-500 text-xs mb-1">New Products</p>
+                    <p class="text-gray-900">{{ getNewProducts(customer) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-500 text-xs mb-1">In Progress</p>
+                    <p class="text-gray-900">{{ getInProgress(customer) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-500 text-xs mb-1">Best Time</p>
+                    <p class="text-gray-900">{{ getBestTime(customer) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-500 text-xs mb-1">Contact By</p>
+                    <p class="text-gray-900">{{ getContactMethod(customer) }}</p>
+                  </div>
+                </div>
+                
+                <div *ngIf="getTimeSensitiveTag(customer)" class="mt-3 pt-3 border-t border-gray-100">
+                  <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                    <i class="pi pi-exclamation-triangle text-xs"></i>
+                    {{ getTimeSensitiveTag(customer) }}
+                  </span>
+                </div>
+              </div>
+              
+              <div *ngIf="filteredTodayCustomers.length === 0" class="text-center py-12 text-gray-500">
+                <i class="pi pi-users text-4xl mb-3 block text-gray-300"></i>
+                <p>No customers found</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop Table -->
+          <div class="hidden lg:block overflow-x-auto">
             <div class="relative max-h-[430px] overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9;">
               <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">

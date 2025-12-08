@@ -6,6 +6,19 @@
     "start": "ng serve",
     "build": "ng build --configuration production",
     "build:azure": "ng build --configuration production",
+    "build:mobile": "ng build --configuration production && npx cap sync",
+    "build:android": "ng build --configuration production && npx cap sync android",
+    "build:ios": "ng build --configuration production && npx cap sync ios",
+    "android:open": "npx cap open android",
+    "android:run": "npx cap run android",
+    "android:sync": "npx cap sync android",
+    "android:build": "npm run build:android && cd android && ./gradlew assembleDebug && cd ..",
+    "android:release": "npm run build:android && cd android && ./gradlew assembleRelease && cd ..",
+    "ios:open": "npx cap open ios",
+    "ios:run": "npx cap run ios",
+    "ios:sync": "npx cap sync ios",
+    "cap:sync": "npx cap sync",
+    "cap:update": "npx cap update",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -19,8 +32,14 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
-    "primeng": "^17.0.0",
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4",
+    "@capacitor/splash-screen": "^7.0.3",
+    "@capacitor/status-bar": "^7.0.3",
     "primeicons": "^6.0.1",
+    "primeng": "^17.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"
@@ -30,9 +49,9 @@
     "@angular/cli": "^17.0.0",
     "@angular/compiler-cli": "^17.0.0",
     "@types/node": "^18.7.0",
-    "typescript": "~5.2.0",
-    "tailwindcss": "^3.3.0",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31"
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.0",
+    "typescript": "~5.2.0"
   }
 }

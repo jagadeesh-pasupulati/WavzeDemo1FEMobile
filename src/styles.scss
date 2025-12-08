@@ -14,10 +14,162 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
   line-height: 1.5;
+  overscroll-behavior-y: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   line-height: 1.2;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 1023px) {
+  body {
+    font-size: 16px; /* Larger base font for mobile readability */
+  }
+
+  .mobile-padding {
+    padding: 1rem;
+  }
+
+  .mobile-card {
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Touch-friendly targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-optimized scrollbars */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent text selection during touch interactions */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile-optimized table */
+@media (max-width: 1023px) {
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-card-list {
+    display: block;
+  }
+
+  .mobile-card-list tbody {
+    display: block;
+  }
+
+  .mobile-card-list tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-card-list thead {
+    display: none;
+  }
+
+  .mobile-card-list td {
+    display: block;
+    text-align: left !important;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .mobile-card-list td:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-card-list td:before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: #6b7280;
+  }
+}
+
+/* Mobile form inputs */
+@media (max-width: 1023px) {
+  input, select, textarea, button {
+    font-size: 16px !important; /* Prevents zoom on focus in iOS */
+  }
+
+  .p-inputtext {
+    font-size: 16px !important;
+    padding: 0.75rem !important;
+  }
+
+  .p-button {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* PrimeNG mobile overrides */
+.p-dialog {
+  @media (max-width: 1023px) {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+}
+
+.p-sidebar {
+  @media (max-width: 1023px) {
+    width: 280px !important;
+  }
+}
+
+/* Custom scrollbar for mobile */
+.customers-table-scrollbar {
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f3f4f6;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
 }
 

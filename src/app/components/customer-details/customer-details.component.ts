@@ -18,41 +18,47 @@ import { CallSummaryService } from '../../services/call-summary.service';
   standalone: true,
   imports: [CommonModule, FormsModule, TagModule, ButtonModule, InputTextModule, InputTextareaModule, DialogModule, MenuModule],
   template: `
-    <div class="p-6 bg-gray-50 min-h-screen flex flex-col" style="height: calc(100vh - 3rem);">
+    <div class="p-4 lg:p-6 bg-gray-50 min-h-screen flex flex-col pb-20 lg:pb-6" style="height: calc(100vh - 3rem);">
       <!-- Customer Profile Header - Full Width -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-6 flex-shrink-0">
-        <div class="flex items-start justify-between gap-6">
-          <div class="flex items-start gap-6 flex-1">
-            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
+      <div class="bg-white rounded-lg shadow-sm p-4 lg:p-6 mb-4 lg:mb-6 flex-shrink-0">
+        <!-- Mobile Back Button -->
+        <button (click)="goBack()" class="lg:hidden mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 touch-target">
+          <i class="pi pi-arrow-left"></i>
+          <span>Back to Customers</span>
+        </button>
+        
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
+          <div class="flex flex-col sm:flex-row items-start gap-4 lg:gap-6 flex-1">
+            <div class="w-16 h-16 lg:w-24 lg:h-24 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl lg:text-3xl font-bold flex-shrink-0">
               {{ getInitials(customer) }}
             </div>
-            <div class="flex-1">
+            <div class="flex-1 w-full">
               <div class="flex items-center gap-2 mb-2">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">OK to call</span>
+                <span class="inline-flex items-center px-2 lg:px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">OK to call</span>
               </div>
-              <h1 class="text-2xl font-semibold text-gray-900 mb-2">{{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}</h1>
-              <div class="flex items-center gap-2 flex-wrap text-sm">
-                <span class="text-gray-500" style="font-size: 14px; line-height: 20px; color: #6b7280;">{{ customer.email || 'No email' }}</span>
-                <span class="text-gray-300" style="color: #d1d5db;">|</span>
+              <h1 class="text-xl lg:text-2xl font-semibold text-gray-900 mb-2">{{ customer.fullName || (customer.firstName + ' ' + customer.lastName) }}</h1>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 flex-wrap text-sm">
+                <span class="text-gray-500">{{ customer.email || 'No email' }}</span>
+                <span class="hidden sm:inline text-gray-300">|</span>
                 <a *ngIf="isOkToCall(customer) && (customer.phone || customer.phn1Nbr)" 
                    (click)="makePhoneCall(customer, $event)" 
-                   class="text-blue-600 hover:text-blue-800 underline cursor-pointer" 
-                   style="font-size: 14px; line-height: 20px; color: #2563eb; text-decoration: underline;">{{ customer.phone || formatPhone(customer.phn1Nbr) }}</a>
+                   class="text-blue-600 hover:text-blue-800 underline cursor-pointer touch-target">{{ customer.phone || formatPhone(customer.phn1Nbr) }}</a>
                 <span *ngIf="!isOkToCall(customer) || (!customer.phone && !customer.phn1Nbr)" 
-                      class="text-gray-500" 
-                      style="font-size: 14px; line-height: 20px; color: #6b7280;">{{ customer.phone || formatPhone(customer.phn1Nbr) || 'No phone' }}</span>
-                <a href="#" class="text-gray-500 hover:text-gray-700 underline ml-1" style="font-size: 14px; line-height: 20px; color: #6b7280; text-decoration: underline;">View all details</a>
+                      class="text-gray-500">{{ customer.phone || formatPhone(customer.phn1Nbr) || 'No phone' }}</span>
+                <a href="#" class="text-gray-500 hover:text-gray-700 underline hidden lg:inline">View all details</a>
               </div>
             </div>
           </div>
-              <div class="flex items-center gap-3 flex-shrink-0">
-                <button *ngIf="isOkToCall(customer) && (customer.phone || customer.phn1Nbr)"
-                        (click)="makePhoneCall(customer, $event)"
-                        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors flex items-center gap-2">
-                  <i class="pi pi-phone"></i>
-                  Call
-                  <span class="text-xs bg-green-700 px-1.5 py-0.5 rounded-full">C</span>
-                </button>
+          
+          <!-- Desktop Action Buttons -->
+          <div class="hidden lg:flex items-center gap-3 flex-shrink-0">
+            <button *ngIf="isOkToCall(customer) && (customer.phone || customer.phn1Nbr)"
+                    (click)="makePhoneCall(customer, $event)"
+                    class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors flex items-center gap-2">
+              <i class="pi pi-phone"></i>
+              Call
+              <span class="text-xs bg-green-700 px-1.5 py-0.5 rounded-full">C</span>
+            </button>
             <button (click)="logContactResult()" 
                     class="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 flex items-center gap-2">
               Log Contact Result
@@ -65,39 +71,57 @@ import { CallSummaryService } from '../../services/call-summary.service';
             </button>
           </div>
         </div>
+        
+        <!-- Mobile Action Buttons -->
+        <div class="lg:hidden flex flex-col sm:flex-row gap-2 mt-4">
+          <button *ngIf="isOkToCall(customer) && (customer.phone || customer.phn1Nbr)"
+                  (click)="makePhoneCall(customer, $event)"
+                  class="flex-1 px-4 py-3 bg-green-600 text-white text-base font-medium rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2 touch-target">
+            <i class="pi pi-phone"></i>
+            Call Customer
+          </button>
+          <button (click)="logContactResult()" 
+                  class="flex-1 px-4 py-3 bg-white text-gray-700 text-base font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 flex items-center justify-center gap-2 touch-target">
+            <i class="pi pi-file"></i>
+            Log Result
+          </button>
+          <button class="sm:w-auto px-4 py-3 bg-white text-gray-700 text-base font-medium rounded-md hover:bg-gray-50 transition-colors border border-gray-300 flex items-center justify-center gap-2 touch-target">
+            <i class="pi pi-ellipsis-h"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-5 gap-6 flex-1 min-h-0">
+      <div class="flex flex-col lg:grid lg:grid-cols-5 gap-4 lg:gap-6 flex-1 min-h-0">
         <!-- Main Content -->
-        <div class="col-span-3 flex flex-col min-h-0">
+        <div class="lg:col-span-3 flex flex-col min-h-0">
           <!-- Product Interest Section with Tabs -->
           <div class="bg-white rounded-lg shadow-sm flex flex-col flex-1 min-h-0">
             <!-- Tabs -->
-            <div class="border-b border-gray-200">
-              <div class="flex">
+            <div class="border-b border-gray-200 overflow-x-auto">
+              <div class="flex whitespace-nowrap">
                 <button (click)="productTab = 'interested'"
                         [class.border-b-2]="productTab === 'interested'"
                         [class.border-blue-600]="productTab === 'interested'"
                         [class.text-blue-600]="productTab === 'interested'"
                         [class.text-gray-600]="productTab !== 'interested'"
-                        class="px-6 py-3 text-sm font-medium transition-colors">
-                  Interested Products
+                        class="px-4 lg:px-6 py-3 text-sm font-medium transition-colors touch-target">
+                  Interested
                 </button>
                 <button (click)="productTab = 'owned'"
                         [class.border-b-2]="productTab === 'owned'"
                         [class.border-blue-600]="productTab === 'owned'"
                         [class.text-blue-600]="productTab === 'owned'"
                         [class.text-gray-600]="productTab !== 'owned'"
-                        class="px-6 py-3 text-sm font-medium transition-colors">
-                  Owned Products
+                        class="px-4 lg:px-6 py-3 text-sm font-medium transition-colors touch-target">
+                  Owned
                 </button>
                 <button (click)="productTab = 'residences'"
                         [class.border-b-2]="productTab === 'residences'"
                         [class.border-blue-600]="productTab === 'residences'"
                         [class.text-blue-600]="productTab === 'residences'"
                         [class.text-gray-600]="productTab !== 'residences'"
-                        class="px-6 py-3 text-sm font-medium transition-colors">
+                        class="px-4 lg:px-6 py-3 text-sm font-medium transition-colors touch-target">
                   Properties
                 </button>
                 <button (click)="productTab = 'allDetails'"
@@ -1775,6 +1799,10 @@ export class CustomerDetailsComponent implements OnInit, OnDestroy, AfterViewIni
     this.selectedProductSource = source;
     this.selectedProductCreated = created;
     this.showProductDetails = true;
+  }
+
+  goBack() {
+    this.router.navigate(['/customers']);
   }
   
 }
