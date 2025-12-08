@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Wavze Frontend
 
 Angular frontend application for Wavze Lead Management System.
@@ -49,3 +50,7 @@ WavzeDemo 1.0 Front End
 # WavzeDemo1FEMobile
 WavzeDemo1FEMobile
 >>>>>>> 2fc79fcaaa2ccccdb19c44fff578546bbdf6ca45
+=======
+# WavzeDemo1FEMobile
+WavzeDemo1FEMobile
+>>>>>>> 70f1d13379871b40084ed657df6449bc81108de7
